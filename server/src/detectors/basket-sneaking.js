@@ -75,11 +75,26 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
     }
   }
 
+  /*
+    The cart search, said once. Trying five addresses is this charge's
+    alternate-strategy ladder: /cart missing is a reason to try /checkout, not a
+    finding. Logged as one line rather than five, so the feed shows the work
+    without burying the moment that matters.
+  */
+  const missed = attempts.filter((a) => !a.ok).length;
+  if (missed > 0) {
+    log(
+      `Exhibit C. Tried ${attempts.length} cart address${attempts.length === 1 ? '' : 'es'}; ` +
+        `${missed} could not be read.`,
+    );
+  }
+
   if (!result) {
     const why = attempts.find((a) => !a.ok && a.reason)?.reason;
     return inconclusive(CHARGE, {
       tier,
       reason: `Could not open a readable cart or checkout page on ${hostOf(url)}${why ? `: ${why}` : '.'}`,
+      detail: { attempts, triedCount: attempts.length },
     });
   }
 
@@ -96,6 +111,7 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
           'Could not reach a cart or checkout page with items in it. Most carts need a signed-in session or a ' +
           'product added first, so nothing here proves the checkout is clean.',
         proof: `Loaded ${reached} but it did not present as a basket.`,
+        detail: { surface: reached, attempts, triedCount: attempts.length },
       });
     }
 
@@ -133,12 +149,14 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
             : result.cartLines.length > 0
               ? `. It showed ${result.cartLines.length} priced item${result.cartLines.length === 1 ? '' : 's'} but no way to remove or re-quantify any of them, so they are recommendations rather than basket contents.`
               : ' but found no line items.'),
+        detail: { surface: reached, attempts, cartLines: result.cartLines.length },
       });
     }
 
     log(`Exhibit C. ${result.cartLines.length} item${result.cartLines.length === 1 ? '' : 's'} in the basket, nothing pre-ticked that costs money.`);
     return clear(CHARGE, {
       tier,
+      detail: { surface: reached, attempts, cartLines: result.cartLines.length, checkboxesFound: result.checkboxesFound },
       proof:
         `Examined ${reached}, a basket holding ${result.cartLines.length} item${result.cartLines.length === 1 ? '' : 's'}. ` +
         `Found ${result.checkboxesFound} checkbox${result.checkboxesFound === 1 ? '' : 'es'}` +
@@ -149,13 +167,22 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
   }
 
   const worst = charged.find((c) => c.hasPrice) || charged[0];
-  const itemLabel = worst.ariaLabel || worst.chargeWord || labelFrom(worst.context);
+  /*
+    What the thing is actually called, in the order a reader would want it.
+    The charge word comes last on purpose: it is the category that matched the
+    pattern ("protection"), not the name on the box ("Purchase Protection
+    Plan"), and quoting the category where the name was available made the
+    evidence read as vaguer than the proof beneath it.
+  */
+  const itemLabel = worst.ariaLabel || labelFrom(worst.context) || worst.chargeWord;
 
   const detail = {
     itemLabel,
     price: worst.price,
     count: charged.length,
     chargeWord: worst.chargeWord,
+    surface: reached,
+    attempts,
   };
 
   log(`Exhibit C. Charge filed. ${charged.length} pre-ticked item${charged.length === 1 ? '' : 's'} with a cost attached.`);
@@ -172,10 +199,37 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
   });
 }
 
-function labelFrom(context) {
+/**
+ * The add-on's name, pulled out of the row's text.
+ *
+ * A basket row reads "Purchase Protection Plan — covers accidental damage for
+ * 12 months ₹149". The name is the part before the sales copy starts, so cut at
+ * the first dash, price or sentence break and keep the head. Quoting the whole
+ * row back at the reader turns a punchline into a paragraph.
+ */
+export function labelFrom(context) {
   if (!context) return null;
-  const first = context.split('|')[0].trim();
-  return first ? truncate(first, 60) : null;
+
+  const head = context
+    .split('|')[0]
+    .split(/\s[—–-]\s|[.•]\s|(?=₹|\bRs\.?\s?\d|\$\d)/)[0]
+    .trim()
+    // Leading checkbox glyphs and stray punctuation from the row's markup.
+    .replace(/^[\s☐☑✓•\-–—:]+/, '')
+    .trim();
+
+  if (!head || head.length < 3) return null;
+
+  /*
+    A price is not a name. The cut above cannot fire on a row that opens with
+    the amount ("₹149"), because a zero-width match at position zero does not
+    split, so the amount survives as the whole head. Strip the money and see
+    whether anything nameable is left.
+  */
+  const nameable = head.replace(/₹|\$|\bRs\.?\b|[\d,.]+/g, '').trim();
+  if (nameable.length < 3) return null;
+
+  return truncate(head, 60);
 }
 
 function truncate(s, n) {

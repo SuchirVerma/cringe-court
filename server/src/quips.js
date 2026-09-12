@@ -47,6 +47,12 @@ const QUIPS = {
   ],
 };
 
+/**
+ * Cover words for a charge nobody asked for. Kept in step with CHARGE_WORDS in
+ * `browser-programs/scan-checkboxes.js`, which is what puts `chargeWord` on the
+ * finding in the first place.
+ */
+const SOLD_AS_PROTECTION = /\b(insurance|protection|warranty|extended)\b/i;
 
 /**
  * Deterministic index from the finding's own values, so the same evidence always
@@ -81,6 +87,17 @@ export function quipFor(chargeId, detail = {}) {
       (detail.labelFound ? `, and the best label on offer is "${detail.labelFound}"` : '') +
       '. Finding the cancel button here is harder than finding a sober person at a wine tasting.'
     );
+  }
+
+  /*
+    When the add-on is sold as protection, take the line written for exactly
+    that. The deterministic pick below would otherwise scatter it across every
+    kind of add-on, and "like a free sample at Costco" lands hardest on the
+    insurance and warranty boxes it was written about.
+  */
+  if (chargeId === 'BASKET_SNEAKING' && SOLD_AS_PROTECTION.test(detail.chargeWord || '')) {
+    const label = detail.itemLabel ? `"${detail.itemLabel}"` : detail.chargeWord;
+    return `They added ${label} to your cart${detail.price ? ` at ${detail.price}` : ''} like it's a free sample at Costco. It's not.`;
   }
 
   const list = QUIPS[chargeId];

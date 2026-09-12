@@ -4,6 +4,7 @@ import { resolveTier } from '../src/sites.js';
 import { normaliseUrl } from '../src/investigate.js';
 import { pairReadings, scanWithRetry } from '../src/detectors/fake-urgency.js';
 import { quipFor } from '../src/quips.js';
+import { labelFrom } from '../src/detectors/basket-sneaking.js';
 
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) { pass++; console.log('  ok  ' + name); } else { fail++; console.log('  FAIL ' + name); } };
@@ -184,8 +185,32 @@ console.log('Retry and recovery');
   t('the second failure is announced', lines.some((l) => /second attempt failed too/i.test(l)));
 }
 
+console.log('Naming the add-on');
+t('cuts the sales copy after an em dash',
+  labelFrom('Purchase Protection Plan — covers accidental damage for 12 months ₹149') === 'Purchase Protection Plan');
+t('cuts at a hyphen too',
+  labelFrom('Extended Warranty - 2 extra years of cover') === 'Extended Warranty');
+t('cuts at the price when there is no dash',
+  labelFrom('Shipping Protection ₹49') === 'Shipping Protection');
+t('handles a rupee amount written as Rs',
+  labelFrom('Gift Wrap Rs 25') === 'Gift Wrap');
+t('takes the first cell of a row', labelFrom('Donate ₹5 | to charity | add') === 'Donate');
+t('strips a leading checkbox glyph', labelFrom('☑ Priority Delivery ₹99') === 'Priority Delivery');
+t('keeps a plain name untouched', labelFrom('Travel Insurance') === 'Travel Insurance');
+t('returns null on nothing', labelFrom('') === null && labelFrom(null) === null);
+t('a price alone is not a name', labelFrom('₹149') === null && labelFrom('Rs 99') === null && labelFrom('$20') === null);
+t('never runs away with a paragraph', (labelFrom('A'.repeat(200)) || '').length <= 60);
+
 console.log('Quips land on the evidence');
 {
+  const costco = (chargeWord) =>
+    quipFor('BASKET_SNEAKING', { itemLabel: 'Purchase Protection', price: '₹149', chargeWord, count: 1 });
+  t('an insurance add-on gets the Costco line', /free sample at Costco/.test(costco('insurance')));
+  t('protection and warranty get it too', /Costco/.test(costco('protection')) && /Costco/.test(costco('warranty')));
+  t('a donation does not get it', !/Costco/.test(costco('donation')));
+  t('a tip does not get it', !/Costco/.test(costco('tip')));
+  t('the Costco line quotes the real charge', costco('insurance').includes('₹149'));
+
   const deep = (steps) => quipFor('SUBSCRIPTION_TRAP', { steps, labelFound: 'Manage membership', vagueOnly: true });
   t('a five-step cancel gets the wine tasting line', /wine tasting/.test(deep(5)));
   t('a seven-step cancel gets it too', /wine tasting/.test(deep(7)));
