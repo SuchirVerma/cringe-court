@@ -113,14 +113,26 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
       clearance costs a "come back with something in your cart", while a wrong
       one tells a user a checkout is honest when nobody checked.
     */
-    if (result.cartLines.length === 0) {
+    /*
+      Priced tiles are not basket contents. Every shop fills its empty-cart page
+      with recommendations, and those carry prices, so a count of priced rows
+      alone reported "a basket holding 2 items" on Amazon's empty cart and
+      cleared it 10/10. A row you can remove or re-quantify is a row you own.
+    */
+    if (result.cartLines.length === 0 || !result.cartAffordances) {
       log('Exhibit C. The basket has no items, so there is nothing to clear or charge.', 'warn');
       return inconclusive(CHARGE, {
         tier,
         reason:
           'The basket had no items in it, and paid add-ons are offered alongside items. Add a product to the ' +
           'cart and run this again to examine the checkout properly.',
-        proof: `Reached ${reached}${result.looksEmpty ? ', which reported itself empty' : ' but found no line items'}.`,
+        proof:
+          `Reached ${reached}` +
+          (result.looksEmpty
+            ? ', which reported itself empty.'
+            : result.cartLines.length > 0
+              ? `. It showed ${result.cartLines.length} priced item${result.cartLines.length === 1 ? '' : 's'} but no way to remove or re-quantify any of them, so they are recommendations rather than basket contents.`
+              : ' but found no line items.'),
       });
     }
 

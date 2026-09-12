@@ -2,6 +2,7 @@ import { violation, clear, inconclusive, resolveAlways } from '../src/evidence.j
 import { buildVerdict } from '../src/verdict.js';
 import { resolveTier } from '../src/sites.js';
 import { normaliseUrl } from '../src/investigate.js';
+import { pairReadings } from '../src/detectors/fake-urgency.js';
 
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) { pass++; console.log('  ok  ' + name); } else { fail++; console.log('  FAIL ' + name); } };
@@ -75,6 +76,53 @@ t('falls back to the url when there is no host', buildVerdict({ url:'https://z.c
   startedAt:new Date().toISOString(), findings: [clear('FALSE_URGENCY',{tier:2,proof:'p'})] }).order.defendant === 'https://z.com');
 t('the bench is named', typeof orderA.order.bench === 'string' && orderA.order.bench.length > 0);
 t('sitting date is written out', /\d{4}/.test(orderA.order.sitting) && !orderA.order.sitting.includes('Invalid'));
+
+console.log('Pairing two readings');
+const clock = (path, text, extra = {}) => ({ path, text, kind: 'clock', numbers: [], stockCount: null, ...extra });
+const stock = (path, text, count) => ({ path, text, kind: 'stock', numbers: [count], stockCount: count });
+
+// Strict: the same element, identified by its path.
+const strict = pairReadings(
+  [clock('body > div:nth-of-type(1) > span', '02:59')],
+  [clock('body > div:nth-of-type(1) > span', '02:53')],
+);
+t('strict pairs by path', strict.length === 1 && strict[0].moved === true);
+t('strict marks a real countdown as moved', strict[0].a === 179 && strict[0].b === 173);
+t('strict is not a loose match', strict[0].loose === false);
+
+const frozen = pairReadings([clock('p', '02:59')], [clock('p', '02:59')]);
+t('a frozen clock does not read as moved', frozen.length === 1 && frozen[0].moved === false);
+t('a frozen clock is flagged identical', frozen[0].identical === true);
+
+// A path that moved is not paired strictly, which is what triggers recovery.
+const moved = pairReadings([clock('body > div:nth-of-type(1)', '02:59')], [clock('body > div:nth-of-type(7)', '02:59')]);
+t('strict refuses to pair an element that moved', moved.length === 0);
+
+// Loose: same kind, same position in the list.
+const loose = pairReadings(
+  [clock('a', '02:59'), clock('b', '10:00')],
+  [clock('x', '02:59'), clock('y', '09:54')],
+  { loose: true },
+);
+t('loose pairs by position', loose.length === 2);
+t('loose keeps the order', loose[0].before.text === '02:59' && loose[0].after.text === '02:59');
+t('loose spots the frozen one', loose[0].moved === false && loose[1].moved === true);
+t('loose marks itself as loose', loose.every((p) => p.loose === true));
+
+// Loose must never pair a clock against a stock claim.
+const kinds = pairReadings([clock('a', '02:59')], [stock('x', 'only 3 left', 3)], { loose: true });
+t('loose never pairs across kinds', kinds.length === 0);
+
+// Uneven counts must not throw or invent a pair.
+t('loose handles more before than after', pairReadings([clock('a', '1:00'), clock('b', '2:00')], [clock('x', '0:59')], { loose: true }).length === 1);
+t('loose handles an empty reading', pairReadings([clock('a', '1:00')], [], { loose: true }).length === 0);
+t('strict handles an empty reading', pairReadings([clock('a', '1:00')], []).length === 0);
+
+// Stock counts compare as numbers, and hours parse.
+const stockPair = pairReadings([stock('s', 'only 5 left', 5)], [stock('s', 'only 3 left', 3)]);
+t('stock counts compare', stockPair.length === 1 && stockPair[0].moved === true);
+const hours = pairReadings([clock('h', '01:00:00')], [clock('h', '00:59:58')]);
+t('hh:mm:ss parses', hours.length === 1 && hours[0].a === 3600 && hours[0].moved === true);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

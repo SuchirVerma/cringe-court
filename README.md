@@ -105,6 +105,23 @@ Open the web app, paste a URL, and press **Open the case**.
 If `webcmd` is not on your PATH after a global install, check where npm put it
 (`npm prefix -g`) and link it: `ln -sf "$(npm prefix -g)/bin/webcmd" ~/.local/bin/webcmd`.
 
+### Seeing it find something
+
+Real storefronts hide their carts and subscription pages behind a sign-in, so a
+signed-out run on Amazon or Flipkart mostly reports what it could not determine.
+That is the tool being honest, but it is a poor first look. Run it against the
+bundled rigged checkout instead:
+
+```bash
+cd server && npm run fixture     # serves the rigged page on :8080
+```
+
+Then investigate `http://localhost:8080/index.html`. It returns guilty on all
+three counts in around 18 seconds, with the evidence quoted from the page.
+
+The same page is the regression target, so those three convictions are asserted
+by `npm run test:live` rather than being a happy-path demo.
+
 ## Testing
 
 ```bash

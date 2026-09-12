@@ -190,6 +190,29 @@ return await page.evaluate(() => {
     never saw. The caller needs to tell the two apart.
   */
   const pageText = (document.body.innerText || '').slice(0, 5000);
+
+  /*
+    Is the page's list of priced things actually a basket?
+
+    Every shop puts a grid of recommendations on its empty-cart page, and those
+    tiles carry prices, so counting priced siblings finds "items" in a cart that
+    holds nothing. Measured on amazon.in/gp/cart/view.html signed out: two
+    "items", both recommendations.
+
+    What separates a real cart row from a recommendation is that you can act on
+    it: remove it, or change its quantity. A recommendation can only be added.
+    So a clearance requires at least one of those controls on the page.
+  */
+  const cartAffordances = Array.from(
+    document.querySelectorAll(
+      'a, button, [role="button"], select, input[type="number"], [data-action*="delete" i], [class*="remove" i], [class*="qty" i], [class*="quantity" i]',
+    ),
+  ).filter((el) => {
+    const label = ((el.innerText || '') + ' ' + (el.getAttribute('aria-label') || '') + ' ' + (el.className || ''))
+      .toString()
+      .slice(0, 120);
+    return /\b(remove|delete|qty|quantity|move\s+to\s+wishlist|save\s+for\s+later)\b/i.test(label);
+  }).length;
   const looksLikeCart =
     /\b(subtotal|order\s+summary|place\s+order|proceed\s+to\s+(pay|checkout|buy)|continue\s+to\s+payment|price\s+details|delivery\s+charges|total\s+amount|your\s+(cart|basket|bag))\b/i.test(
       pageText,
@@ -207,5 +230,6 @@ return await page.evaluate(() => {
     cartLines: lines.slice(0, 20),
     looksLikeCart,
     looksEmpty,
+    cartAffordances,
   };
 });

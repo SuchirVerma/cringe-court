@@ -24,8 +24,13 @@
 
 if (INPUT.navigateTo) {
   await page.goto(INPUT.navigateTo, { waitUntil: 'domcontentloaded', timeout: 20000 });
-  // Give client-rendered timers a moment to mount and tick at least once.
-  await page.waitForTimeout(2500);
+  /*
+    Give client-rendered timers a moment to mount and tick at least once.
+    `settleMs` exists so a retry can wait longer than the first attempt did: a
+    page that was still assembling itself is the commonest reason a first read
+    comes back empty, and waiting is the cheapest thing to try next.
+  */
+  await page.waitForTimeout(INPUT.settleMs || 2500);
 }
 
 /*
@@ -183,6 +188,15 @@ return await page.evaluate((named) => {
   return {
     url: location.href,
     title: document.title,
+    /*
+      How much page there actually was.
+
+      A bot wall, an interstitial, or a render that never happened all produce
+      zero candidates, which is indistinguishable from an honest page carrying
+      no urgency claim. A clearance needs to know the difference, so it gets the
+      body's own size to judge by.
+    */
+    textLength: (document.body.innerText || '').trim().length,
     readAt: Date.now(),
     candidates,
     namedReadings,
