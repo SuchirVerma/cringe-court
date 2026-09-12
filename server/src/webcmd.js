@@ -249,6 +249,19 @@ export async function runProgram(sessionId, programName, input = {}) {
     }
 
     const parsed = extractJson(res.stdout);
+
+    /*
+      A failed run puts its error envelope on stdout as JSON. Unwrapping that
+      as if it were a result handed the detectors an object with none of the
+      fields they expect, which their shape guards caught, but the reason they
+      then reported was "not a readable structure" when the truth was a
+      timeout. Recognise the envelope and report the failure as a failure, in
+      its own words, so recovery.js can name the wall.
+    */
+    if (parsed && typeof parsed === 'object' && parsed.error && !parsed.result) {
+      return { ok: false, data: null, reason: errorMessage(res) || 'Browser program failed' };
+    }
+
     // webcmd may wrap the return value; unwrap the common shapes.
     const data = parsed?.result ?? parsed?.data ?? parsed;
 

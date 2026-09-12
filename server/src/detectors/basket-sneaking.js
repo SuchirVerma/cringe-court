@@ -80,7 +80,9 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
     const shaped =
       run.data && typeof run.data === 'object' && Array.isArray(run.data.preTicked);
     if (!shaped) {
-      attempts.push({ target, ok: false, reason: 'the page did not return a readable cart structure' });
+      // Amend this target's entry rather than adding a second one, or five
+      // addresses read as ten in the feed.
+      Object.assign(attempts[attempts.length - 1], { ok: false, reason: 'the page did not return a readable cart structure', kind: 'unreadable' });
       continue;
     }
 

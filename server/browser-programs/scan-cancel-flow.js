@@ -105,10 +105,29 @@ async function survey() {
       /\/(login|signin|sign-in|auth|account\/login)/i.test(location.pathname) ||
       !!document.querySelector('input[type="password"], input[name*="otp" i]');
 
-    const insideAccount =
+    const accountSignal =
       /\b(log\s?out|sign\s?out|logout|signout|my\s+orders|your\s+orders|order\s+history|manage\s+your\s+account)\b/i.test(
         bodyText,
       ) || !!document.querySelector('a[href*="logout" i], a[href*="signout" i], button[id*="logout" i]');
+
+    /*
+      A signed-out header always offers a way in. Flipkart's guest header carries
+      an account dropdown with "Orders", "My Profile" and a logout href in the
+      DOM, so the signal above fired on a page nobody was signed into, and a
+      marketing page for Flipkart Plus was charged as a subscription trap
+      "inside a signed-in account". That is the exact verdict-without-evidence
+      this check exists to prevent.
+
+      So the signal only counts when the page offers no standalone Login,
+      Sign in or Sign up control. A page that still invites you to log in is not
+      inside anything, whatever its menus mention.
+    */
+    const offersLogin = Array.from(document.querySelectorAll('a, button, [role="button"]')).some((el) => {
+      const own = (el.innerText || '').replace(/\s+/g, ' ').trim();
+      return /^(log\s?in|sign\s?in|login|signin|sign\s?up|signup|new\s+customer\?\s*sign\s?up)$/i.test(own);
+    });
+
+    const insideAccount = accountSignal && !offersLogin;
 
     return {
       url: location.href,

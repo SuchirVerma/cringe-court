@@ -218,7 +218,8 @@ const scan = await page.evaluate(() => {
     it: remove it, or change its quantity. A recommendation can only be added.
     So a clearance requires at least one of those controls on the page.
   */
-  const cartAffordances = Array.from(
+  const AFFORDANCE = /\b(remove|delete|qty|quantity|move\s+to\s+wishlist|save\s+for\s+later)\b/i;
+  const byControl = Array.from(
     document.querySelectorAll(
       'a, button, [role="button"], select, input[type="number"], [data-action*="delete" i], [class*="remove" i], [class*="qty" i], [class*="quantity" i]',
     ),
@@ -226,8 +227,25 @@ const scan = await page.evaluate(() => {
     const label = ((el.innerText || '') + ' ' + (el.getAttribute('aria-label') || '') + ' ' + (el.className || ''))
       .toString()
       .slice(0, 120);
-    return /\b(remove|delete|qty|quantity|move\s+to\s+wishlist|save\s+for\s+later)\b/i.test(label);
+    return AFFORDANCE.test(label);
   }).length;
+
+  /*
+    Controls that are not controls. Flipkart's cart renders "Remove", "Save for
+    later" and "Qty:" as plain divs with obfuscated class names, so a query for
+    buttons and links finds none of them and a basket holding a real item read
+    as a rail of recommendations. A leaf whose own text is exactly one of those
+    words is a control whatever its tag; a recommendation tile never says
+    "Remove". Leaves only, and short ones, so a paragraph that happens to
+    contain the word does not count.
+  */
+  const byText = Array.from(document.querySelectorAll('body *')).filter((el) => {
+    if (el.children.length > 0) return false;
+    const own = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return own.length > 0 && own.length <= 24 && AFFORDANCE.test(own) && !/add|buy/i.test(own);
+  }).length;
+
+  const cartAffordances = byControl + byText;
   const looksLikeCart =
     /\b(subtotal|order\s+summary|place\s+order|proceed\s+to\s+(pay|checkout|buy)|continue\s+to\s+payment|price\s+details|delivery\s+charges|total\s+amount|your\s+(cart|basket|bag))\b/i.test(
       pageText,
