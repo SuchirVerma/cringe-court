@@ -142,9 +142,37 @@ export async function available() {
 }
 
 /**
+ * Make sure our profile exists. A profile is a cookie jar; webcmd will not open
+ * a session against one that was never created, and on a fresh machine none are.
+ * Idempotent: an "already exists" failure is success as far as we care.
+ */
+let profileReady = false;
+export async function ensureProfile() {
+  if (profileReady) return { ok: true };
+
+  const list = await exec(['profile', 'list', '-f', 'json'], { timeout: TIMEOUTS.short });
+  const parsed = extractJson(list.stdout);
+  const existing = JSON.stringify(parsed ?? '') + list.stdout;
+  if (list.ok && existing.includes(PROFILE)) {
+    profileReady = true;
+    return { ok: true };
+  }
+
+  const created = await exec(['profile', 'create', PROFILE], { timeout: TIMEOUTS.session });
+  if (created.ok || /exist/i.test(created.stdout + created.stderr)) {
+    profileReady = true;
+    return { ok: true };
+  }
+  return { ok: false, reason: errorMessage(created) || `Could not create the ${PROFILE} profile` };
+}
+
+/**
  * Open a browser session. Returns { ok, sessionId, reason }.
  */
 export async function createSession(name = 'cringecourt') {
+  const profile = await ensureProfile();
+  if (!profile.ok) return { ok: false, sessionId: null, reason: profile.reason };
+
   const safe = `${name}-${Date.now().toString(36)}`.replace(/[^a-zA-Z0-9-]/g, '-');
   const res = await exec(['--profile', PROFILE, 'session', 'create', safe, '-f', 'json'], {
     timeout: TIMEOUTS.session,
@@ -156,7 +184,7 @@ export async function createSession(name = 'cringecourt') {
       sessionId: null,
       reason: res.timedOut
         ? 'Browser session did not open within 45 seconds'
-        : firstLine(res.stderr) || 'Browser session could not be opened',
+        : errorMessage(res) || 'Browser session could not be opened',
     };
   }
 
@@ -240,6 +268,21 @@ export async function runProgram(sessionId, programName, input = {}) {
   } finally {
     if (dir) await rm(dir, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+/**
+ * webcmd reports failures as a JSON envelope on stdout. Reading only the first
+ * line of that yields "{", which tells the user nothing, so pull the real
+ * message out and fall back to plain text for non-JSON failures.
+ */
+function errorMessage(res) {
+  const parsed = extractJson(res.stdout) || extractJson(res.stderr);
+  const err = parsed?.error;
+  if (err) {
+    const help = err.help ? ` (${String(err.help).split('\n')[0]})` : '';
+    return `${err.message || err.code}${help}`.slice(0, 300);
+  }
+  return firstLine(res.stderr) || firstLine(res.stdout);
 }
 
 function firstLine(s) {

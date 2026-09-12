@@ -20,7 +20,9 @@ const ACCEPTABLE_STEPS = 3;
 function guessAccountUrls(url) {
   const u = new URL(url);
   const base = `${u.protocol}//${u.host}`;
-  return ['/account', '/my-account', '/settings', '/profile', '/subscriptions'].map((p) => base + p);
+  const paths = ['/account', '/my-account', '/settings', '/profile', '/subscriptions'];
+  // Static sites serve these with an extension, so try both spellings.
+  return [...paths, ...paths.map((p) => `${p}.html`)].map((p) => base + p);
 }
 
 export async function detect({ sessionId, url, tier, site, profile, log }) {
@@ -38,7 +40,9 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
   let best = null;
   let lastReason = null;
 
-  for (const target of targets.slice(0, 4)) {
+  let anyPageReached = false;
+
+  for (const target of targets.slice(0, 8)) {
     const run = await runProgram(sessionId, 'scan-cancel-flow', { navigateTo: target, maxDepth: 4 });
     if (!run.ok) {
       lastReason = run.reason;
@@ -46,6 +50,14 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
     }
 
     const data = run.data;
+
+    // The page was not there. Try the next candidate rather than concluding
+    // anything from a 404.
+    if (data.notFound) {
+      lastReason = `${target} returned ${data.httpStatus}`;
+      continue;
+    }
+    anyPageReached = true;
     if (data.loginWall) {
       log('Exhibit B. Hit a sign-in wall. Cannot judge a cancellation flow we cannot enter.');
       return inconclusive(CHARGE, {
@@ -69,7 +81,9 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
   if (!best) {
     return inconclusive(CHARGE, {
       tier,
-      reason: `Could not open an account or subscription page. ${lastReason || ''}`.trim(),
+      reason: anyPageReached
+        ? `Reached the account area but could not analyse it. ${lastReason || ''}`.trim()
+        : `No account or subscription page could be found on this site. ${lastReason || ''}`.trim(),
     });
   }
 

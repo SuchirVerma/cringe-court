@@ -78,7 +78,12 @@ export async function detect({ sessionId, url, tier, site, log }) {
 
   // A genuine countdown somewhere on the page does not excuse a frozen one
   // elsewhere, but we charge only on the frozen ones.
-  const frozen = compared.filter((c) => !c.moved);
+  // A frozen clock is stronger evidence than a static stock claim, so if both
+  // are present the clock is the one that gets charged and quoted.
+  const rank = { clock: 0, stock: 1, 'urgency-copy': 2 };
+  const frozen = compared
+    .filter((c) => !c.moved)
+    .sort((a, b) => (rank[a.before.kind] ?? 3) - (rank[b.before.kind] ?? 3));
   const honest = compared.filter((c) => c.moved);
 
   if (frozen.length === 0) {
@@ -87,14 +92,17 @@ export async function detect({ sessionId, url, tier, site, log }) {
       tier,
       proof:
         `Found ${compared.length} countdown element${compared.length === 1 ? '' : 's'} and watched ${WAIT_SECONDS} seconds. ` +
-        `Every one of them decreased as a real deadline should. First read "${compared[0].before.text}", second read "${compared[0].after.text}".`,
+        `Every one of them decreased as a real deadline should. First read "${compared[0].before.context || compared[0].before.text}", second read "${compared[0].after.context || compared[0].after.text}".`,
     });
   }
 
   const worst = frozen[0];
+  const shown = worst.before.context || worst.before.text;
+  const shownAfter = worst.after.context || worst.after.text;
+
   const detail = {
-    firstReading: worst.before.text,
-    secondReading: worst.after.text,
+    firstReading: shown,
+    secondReading: shownAfter,
     waitedSeconds: WAIT_SECONDS,
     kind: worst.before.kind,
     label: worst.before.label,
@@ -102,15 +110,15 @@ export async function detect({ sessionId, url, tier, site, log }) {
     honestCount: honest.length,
   };
 
-  log(`Exhibit A. Charge filed. "${worst.before.text}" did not move in ${WAIT_SECONDS} seconds.`);
+  log(`Exhibit A. Charge filed. "${shown}" did not move in ${WAIT_SECONDS} seconds.`);
 
   return violation(CHARGE, {
     tier,
     confidence: worst.identical ? 'high' : 'medium',
     detail,
     proof:
-      `At the first reading the element said "${worst.before.text}". ` +
-      `After ${WAIT_SECONDS} seconds of real elapsed time it said "${worst.after.text}". ` +
+      `At the first reading the element said "${shown}". ` +
+      `After ${WAIT_SECONDS} seconds of real elapsed time it said "${shownAfter}". ` +
       (worst.b > worst.a
         ? 'The value went up, which no deadline does. '
         : 'The value did not fall. ') +

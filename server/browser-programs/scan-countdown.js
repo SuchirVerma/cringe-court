@@ -64,14 +64,24 @@ return await page.evaluate(() => {
 
     if (!ownText || ownText.length > 120) continue;
 
+    /*
+      The ticking digits are almost always in their own element, with the words
+      that make them urgent in the parent: "Offer ends in <span>02:59</span>".
+      Judging the span on its own text alone misses every real countdown, so a
+      bare clock is checked against the sentence it sits inside.
+    */
+    const parentText = (el.parentElement?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+
     const hasClock = TIME_PATTERN.test(ownText);
-    const hasUrgency = URGENCY_WORDS.test(ownText);
     const hasUnits = UNIT_PATTERN.test(ownText);
     const stockMatch = ownText.match(STOCK_PATTERN);
+    const urgentHere = URGENCY_WORDS.test(ownText);
+    const urgentNearby = hasClock && parentText.length <= 200 && URGENCY_WORDS.test(parentText);
+    const hasUrgency = urgentHere || urgentNearby;
 
-    // A bare clock alone is not enough (prices, durations, runtimes look similar).
-    // Require either urgency language, or a clock plus a digit that can fall.
-    const isCandidate = (hasClock && (hasUrgency || hasUnits)) || (hasUrgency && /\d/.test(ownText)) || !!stockMatch;
+    // A bare clock alone is not enough (prices, durations and runtimes look the
+    // same). It needs urgency language, either in its own text or around it.
+    const isCandidate = (hasClock && (hasUrgency || hasUnits)) || (urgentHere && /\d/.test(ownText)) || !!stockMatch;
     if (!isCandidate) continue;
     if (!visible(el)) continue;
 
@@ -80,7 +90,10 @@ return await page.evaluate(() => {
     seen.add(key);
 
     candidates.push({
+      // `text` is what gets compared between readings; `context` is the sentence
+      // a human should be shown in the evidence.
       text: ownText,
+      context: urgentNearby && parentText ? parentText : ownText,
       path: pathOf(el),
       kind: hasClock ? 'clock' : stockMatch ? 'stock' : 'urgency-copy',
       numbers: (ownText.match(/\d+/g) || []).map(Number),

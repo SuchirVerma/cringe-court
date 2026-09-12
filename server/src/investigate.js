@@ -13,13 +13,23 @@ import { resolveAlways } from './evidence.js';
 import { buildVerdict } from './verdict.js';
 import * as webcmd from './webcmd.js';
 
+const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/;
+
 export function normaliseUrl(raw) {
   const trimmed = (raw || '').trim();
   if (!trimmed) return null;
   const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   try {
     const u = new URL(withScheme);
-    if (!u.hostname.includes('.')) return null;
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+
+    const host = u.hostname.toLowerCase();
+    // A dot is the common case, but not the only legitimate host: localhost and
+    // bare IPs are how the fixture site and any intranet target are addressed.
+    const routable =
+      host.includes('.') || host === 'localhost' || host.endsWith('.localhost') || IPV4.test(host) || host.startsWith('[');
+    if (!routable) return null;
+
     return u.toString();
   } catch {
     return null;

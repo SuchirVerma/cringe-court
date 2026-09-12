@@ -13,7 +13,17 @@
 const MAX_DEPTH = INPUT.maxDepth ?? 4;
 
 if (INPUT.navigateTo) {
-  await page.goto(INPUT.navigateTo, { waitUntil: 'domcontentloaded', timeout: 20000 });
+  const response = await page.goto(INPUT.navigateTo, { waitUntil: 'domcontentloaded', timeout: 20000 });
+  /*
+    A 404 is not an account page with no cancel link on it. Searching one and
+    then reporting "no cancellation control was reachable" would be a false
+    accusation, so say the page was not there and let the caller try the next
+    candidate.
+  */
+  const status = response ? response.status() : 0;
+  if (status >= 400) {
+    return { httpStatus: status, notFound: true, steps: 0, found: null, loginWall: false, exhausted: false, trail: [] };
+  }
   await page.waitForTimeout(1500);
 }
 

@@ -72,7 +72,17 @@ return await page.evaluate(() => {
       node = node.parentElement;
       hops++;
     }
-    return chunks.join(' | ').replace(/\s+/g, ' ').trim().slice(0, 400);
+
+    // A label and its wrapper usually hold the same sentence. Quoting it twice
+    // in the evidence reads as a bug, so keep only distinct chunks.
+    const seenChunks = [];
+    for (const chunk of chunks) {
+      const normalised = chunk.replace(/\s+/g, ' ').trim();
+      if (!normalised) continue;
+      if (seenChunks.some((s) => s === normalised || s.includes(normalised))) continue;
+      seenChunks.push(normalised);
+    }
+    return seenChunks.join(' | ').slice(0, 400);
   }
 
   const boxes = Array.from(

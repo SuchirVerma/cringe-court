@@ -25,15 +25,13 @@ const QUIPS = {
   ],
   SUBSCRIPTION_TRAP: [
     (d) =>
-      `It took ${d.steps} clicks to find the cancel button. Signing up took one. The maths is not subtle.`,
+      `It took ${d.steps} click${d.steps === 1 ? '' : 's'} to find the cancel button. Signing up took one. The maths is not subtle.`,
     (d) =>
-      `We went ${d.steps} screens deep looking for "Cancel" and found "${d.labelFound}" instead. Creative writing, but not an answer.`,
+      `We went ${d.steps} screen${d.steps === 1 ? '' : 's'} deep looking for "Cancel" and found "${d.labelFound}" instead. Creative writing, but not an answer.`,
     (d) =>
-      `The cancellation option is ${d.steps} clicks from the subscription page. At that depth you are not cancelling, you are spelunking.`,
+      `The cancellation option is ${d.steps} click${d.steps === 1 ? '' : 's'} from the subscription page. At that depth you are not cancelling, you are spelunking.`,
     (d) =>
-      `Joining: one button, brightly coloured, above the fold. Leaving: ${d.steps} steps and a scavenger hunt. Curious asymmetry.`,
-    (d) =>
-      `There is no cancel control on the subscription page at all. The subscription page. The one page whose entire job this is.`,
+      `Joining: one button, brightly coloured, above the fold. Leaving: ${d.steps} step${d.steps === 1 ? '' : 's'} and a scavenger hunt. Curious asymmetry.`,
   ],
   BASKET_SNEAKING: [
     (d) =>
@@ -61,6 +59,15 @@ function pick(list, detail) {
 }
 
 export function quipFor(chargeId, detail = {}) {
+  /*
+    When the search was exhausted there is no step count worth quoting, and a
+    "it took N clicks" line would contradict the proof, which says no control
+    was found at all. The absence is its own joke.
+  */
+  if (chargeId === 'SUBSCRIPTION_TRAP' && detail.exhausted) {
+    return 'There is no cancel control anywhere in the subscription area. Not buried, not disguised. Simply absent.';
+  }
+
   const list = QUIPS[chargeId];
   if (!list || list.length === 0) return null;
 

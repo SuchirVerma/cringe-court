@@ -10,6 +10,10 @@ console.log('URL handling');
 t('bare domain gets scheme', normaliseUrl('flipkart.com') === 'https://flipkart.com/');
 t('garbage rejected', normaliseUrl('not a url') === null);
 t('empty rejected', normaliseUrl('') === null);
+t('localhost accepted', normaliseUrl('http://localhost:8080/index.html') === 'http://localhost:8080/index.html');
+t('bare IP accepted', normaliseUrl('http://127.0.0.1:8080/') === 'http://127.0.0.1:8080/');
+t('single-word host rejected', normaliseUrl('somehost') === null);
+t('non-http scheme rejected', normaliseUrl('file:///etc/passwd') === null);
 
 console.log('Tier routing');
 t('amazon.in is tier 1', resolveTier('https://www.amazon.in/deals').tier === 1);

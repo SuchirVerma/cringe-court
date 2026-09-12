@@ -93,7 +93,11 @@ export default function App() {
               id="url"
               type="text"
               inputMode="url"
-              autoComplete="url"
+              // Not autoComplete="url": the browser fills this from history and
+              // the field then shows an address the user never typed, which
+              // reads as the tool having gone somewhere on its own.
+              autoComplete="off"
+              spellCheck={false}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="flipkart.com"
