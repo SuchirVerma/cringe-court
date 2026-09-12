@@ -4,7 +4,22 @@
  * Runs inside the page via webcmd. Returns candidates with a stable path so a
  * second reading can be matched against the first. Reads only; changes nothing.
  *
- * INPUT: { navigateTo?: string }
+ * INPUT: {
+ *   navigateTo?: string,
+ *   scrollPasses?: number,      // deal grids that only render once scrolled
+ *   namedSelectors?: [{ name, selector, kind }]
+ * }
+ *
+ * `namedSelectors` is how a Tier 1 site contributes its own knowledge. The
+ * general sweep below walks the whole page looking for urgency language, which
+ * finds a claim only if it is worded the way the sweep expects. A named site
+ * knows the exact element its stock line or deal timer lives in, so it can read
+ * it directly and be certain it was read. Both paths produce the same candidate
+ * shape, are deduplicated together, and are compared by the same code, so a
+ * site profile adds reach without adding a second way to be right.
+ *
+ * Never `networkidle` here. Amazon holds connections open indefinitely, so it
+ * never fires, and webcmd caps a single browser run at 30 seconds.
  */
 
 if (INPUT.navigateTo) {
@@ -13,7 +28,22 @@ if (INPUT.navigateTo) {
   await page.waitForTimeout(2500);
 }
 
-return await page.evaluate(() => {
+/*
+  Deal grids are lazy: Amazon's /deals renders its nav on load and the actual
+  deal cards only after the viewport moves. Measured on amazon.in/deals: 3.1k
+  characters of body text before scrolling, 8.8k after. Without this the sweep
+  reads a page of category links and honestly reports finding nothing.
+*/
+for (let i = 0; i < (INPUT.scrollPasses || 0); i++) {
+  await page.evaluate(() => window.scrollBy(0, Math.round(window.innerHeight * 0.9)));
+  await page.waitForTimeout(900);
+}
+if (INPUT.scrollPasses) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(400);
+}
+
+return await page.evaluate((named) => {
   const TIME_PATTERN = /\b\d{1,2}\s*:\s*\d{2}(\s*:\s*\d{2})?\b/;
   const URGENCY_WORDS =
     /\b(left|remaining|remain|expires?|expiring|ends?\s+in|ending|hurry|hurry\s+up|only\s+\d+|last\s+\d+|selling\s+fast|almost\s+gone|deal\s+ends|offer\s+ends|closes\s+in|time\s+left)\b/i;
@@ -102,10 +132,59 @@ return await page.evaluate(() => {
     });
   }
 
+  /*
+    The named surfaces a Tier 1 profile pointed us at. These are read whether or
+    not they are worded like urgency, because the value of knowing a site is
+    being able to say "we read the stock line itself", rather than "nothing on
+    the page was phrased the way we look for".
+  */
+  const namedReadings = [];
+  for (const entry of named || []) {
+    let el = null;
+    try {
+      el = document.querySelector(entry.selector);
+    } catch {
+      continue; // A malformed selector in a profile must not stop the scan.
+    }
+    if (!el) {
+      namedReadings.push({ name: entry.name, found: false, text: null });
+      continue;
+    }
+
+    const text = (el.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+    namedReadings.push({ name: entry.name, found: true, text, visible: visible(el) });
+    if (!text) continue;
+
+    const stockMatch = text.match(STOCK_PATTERN);
+    const hasClock = TIME_PATTERN.test(text);
+
+    // Only worth comparing between readings if it carries a number that could move.
+    if (!hasClock && !stockMatch && !/\d/.test(text)) continue;
+
+    const key = text.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    candidates.push({
+      text,
+      context: text,
+      // Named elements are re-resolved by their selector, not by a walked path,
+      // so a re-render between readings cannot lose them.
+      path: `named:${entry.name}`,
+      selector: entry.selector,
+      kind: hasClock ? 'clock' : stockMatch ? 'stock' : entry.kind || 'urgency-copy',
+      numbers: (text.match(/\d+/g) || []).map(Number),
+      stockCount: stockMatch ? Number(stockMatch[1]) : null,
+      label: entry.name,
+      viaProfile: true,
+    });
+  }
+
   return {
     url: location.href,
     title: document.title,
     readAt: Date.now(),
     candidates,
+    namedReadings,
   };
-});
+}, INPUT.namedSelectors || []);

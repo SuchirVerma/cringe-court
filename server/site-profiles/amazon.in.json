@@ -1,0 +1,69 @@
+{
+  "display": "Amazon India",
+  "urgency": {
+    "surface": "/deals",
+    "scrollPasses": 4,
+    "selectors": [
+      {
+        "name": "availability",
+        "selector": "#availability",
+        "kind": "stock"
+      },
+      {
+        "name": "deal-badge",
+        "selector": "#dealBadgeSupportingText, .dealBadgeSupportingText",
+        "kind": "urgency-copy"
+      },
+      {
+        "name": "deal-block",
+        "selector": "#dealBadge_feature_div",
+        "kind": "urgency-copy"
+      }
+    ],
+    "keepPathPatterns": [
+      "/dp/",
+      "/gp/product/",
+      "/deal/",
+      "/deals",
+      "/gp/goldbox",
+      "/events/"
+    ]
+  },
+  "explored": {
+    "surfaces": [
+      {
+        "path": "/",
+        "reachable": true,
+        "landedOn": "https://www.amazon.in/",
+        "title": "Online Shopping site in India: Shop Online for Mobiles, Books, Watches, Shoes an",
+        "candidateCount": 0,
+        "kinds": [],
+        "samples": [],
+        "namedSelectorsFound": [],
+        "namedSelectorsMissing": [
+          "availability",
+          "deal-badge",
+          "deal-block"
+        ]
+      },
+      {
+        "path": "/deals",
+        "reachable": true,
+        "landedOn": "https://www.amazon.in/deals",
+        "title": "Amazon.in - Deals",
+        "candidateCount": 0,
+        "kinds": [],
+        "samples": [],
+        "namedSelectorsFound": [],
+        "namedSelectorsMissing": [
+          "availability",
+          "deal-badge",
+          "deal-block"
+        ]
+      }
+    ],
+    "summary": "No countdown or scarcity claim was displayed on any surface explored."
+  },
+  "siteKey": "amazon.in",
+  "learnedAt": "2026-09-12T07:08:29.341Z"
+}

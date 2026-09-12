@@ -13,6 +13,8 @@
     "start": "node src/index.js",
     "test": "node test/logic.test.mjs",
     "test:live": "node test/detectors.live.mjs",
+    "test:amazon": "node test/amazon.live.mjs",
+    "explore": "node src/explore.js",
     "fixture": "python3 -m http.server 8080 --directory test-site",
     "check": "node --check src/index.js && node --check src/investigate.js && node --check src/webcmd.js"
   },

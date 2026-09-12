@@ -33,6 +33,34 @@ export const NAMED_SITES = {
     subscriptionPaths: ['/gp/primecentral', '/auto-deliveries'],
     urgencySurfaces: ['deal pages', 'product detail lightning deals'],
     notes: 'Lightning Deal timers and "Only N left in stock" are the urgency surfaces.',
+
+    /*
+      Urgency knowledge, from actually driving the site on 2026-09-12.
+
+      The homepage carries no urgency claim at all, so landing on amazon.in and
+      reporting "nothing found" would be true about that page and useless about
+      the site. The claims live on the deal grid and on product pages, so that
+      is where a Tier 1 run goes.
+
+      The deal grid is lazy: it renders category navigation on load and the deal
+      cards only once the viewport moves, which is what scrollPasses is for.
+    */
+    urgency: {
+      surface: '/deals',
+      scrollPasses: 4,
+      // Read directly, rather than hoped for in a text sweep.
+      selectors: [
+        { name: 'availability', selector: '#availability', kind: 'stock' },
+        {
+          name: 'deal-badge',
+          selector: '#dealBadgeSupportingText, .dealBadgeSupportingText',
+          kind: 'urgency-copy',
+        },
+        { name: 'deal-block', selector: '#dealBadge_feature_div', kind: 'urgency-copy' },
+      ],
+      // These pages are already somewhere urgency lives: never redirect off them.
+      keepPathPatterns: ['/dp/', '/gp/product/', '/deal/', '/deals', '/gp/goldbox', '/events/'],
+    },
   },
   'flipkart.com': {
     key: 'flipkart.com',

@@ -12,9 +12,18 @@ import { exhibitDrop } from '../animations/framerVariants';
  * must not compete with an actual finding.
  */
 
+/** The examined URL, trimmed to something readable in a caption. */
+function surfaceLabel(detail: Record<string, unknown> | undefined): string | null {
+  const raw = detail?.surface;
+  if (typeof raw !== 'string' || !raw) return null;
+  const bare = raw.replace(/^https?:\/\//, '');
+  return bare.length > 72 ? `${bare.slice(0, 72)}…` : bare;
+}
+
 export function EvidenceCard({ finding, index }: { finding: Finding; index: number }) {
   const reduced = useReducedMotion();
   const isViolation = finding.outcome === 'violation';
+  const surface = surfaceLabel(finding.detail);
 
   return (
     <motion.article
@@ -79,6 +88,21 @@ export function EvidenceCard({ finding, index }: { finding: Finding; index: numb
       {finding.outcome === 'inconclusive' && finding.reason && (
         <p className="mt-3 text-[0.86rem] leading-relaxed" style={{ color: 'var(--color-ink-300)' }}>
           {finding.reason}
+        </p>
+      )}
+
+      {/*
+        Where the court actually looked. On a Tier 1 site the run often leaves
+        the address it was given, because the claims live somewhere else on that
+        site, and a reader who is not told that will reasonably assume the
+        verdict is about the page they pasted.
+      */}
+      {surface && (
+        <p
+          className="mt-3 font-mono text-[0.64rem] leading-relaxed"
+          style={{ color: isViolation ? 'var(--color-paper-meta)' : 'var(--color-ink-600)' }}
+        >
+          Examined {surface}
         </p>
       )}
 

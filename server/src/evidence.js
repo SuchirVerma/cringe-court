@@ -47,14 +47,21 @@ export function violation(chargeId, { tier, proof, confidence = 'high', detail =
   };
 }
 
-/** Checked properly, found nothing. A real result, not an absence of one. */
-export function clear(chargeId, { tier, proof }) {
+/**
+ * Checked properly, found nothing. A real result, not an absence of one.
+ *
+ * A clearance carries `detail` for the same reason a charge does: what was
+ * examined is part of the finding. On a named site the run often leaves the
+ * address it was handed, because the claims live elsewhere on that site, and a
+ * clearance that cannot say where it looked is not worth much.
+ */
+export function clear(chargeId, { tier, proof, detail = {} }) {
   return {
     ...base(chargeId, tier),
     outcome: OUTCOME.CLEAR,
     confidence: 'high',
     proof,
-    detail: {},
+    detail,
     quip: null,
     harm: null,
     remedies: [],
@@ -65,14 +72,14 @@ export function clear(chargeId, { tier, proof }) {
  * Could not reach a conclusion. `reason` is shown to the user, so it must say
  * what actually stopped us, never "something went wrong".
  */
-export function inconclusive(chargeId, { tier, reason, proof = null }) {
+export function inconclusive(chargeId, { tier, reason, proof = null, detail = {} }) {
   return {
     ...base(chargeId, tier),
     outcome: OUTCOME.INCONCLUSIVE,
     confidence: 'none',
     reason,
     proof,
-    detail: {},
+    detail,
     quip: null,
     harm: null,
     remedies: [],
