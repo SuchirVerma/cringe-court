@@ -2,7 +2,7 @@ import { violation, clear, inconclusive, resolveAlways } from '../src/evidence.j
 import { buildVerdict } from '../src/verdict.js';
 import { resolveTier } from '../src/sites.js';
 import { normaliseUrl } from '../src/investigate.js';
-import { pairReadings } from '../src/detectors/fake-urgency.js';
+import { pairReadings, scanWithRetry } from '../src/detectors/fake-urgency.js';
 
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) { pass++; console.log('  ok  ' + name); } else { fail++; console.log('  FAIL ' + name); } };
@@ -123,6 +123,65 @@ const stockPair = pairReadings([stock('s', 'only 5 left', 5)], [stock('s', 'only
 t('stock counts compare', stockPair.length === 1 && stockPair[0].moved === true);
 const hours = pairReadings([clock('h', '01:00:00')], [clock('h', '00:59:58')]);
 t('hh:mm:ss parses', hours.length === 1 && hours[0].a === 3600 && hours[0].moved === true);
+
+console.log('Retry and recovery');
+{
+  // A read that works first time must not be retried, and must not be narrated.
+  const calls = [];
+  const lines = [];
+  const attempts = [];
+  const ok = await scanWithRetry('s', { navigateTo: 'x' }, {
+    log: (m) => lines.push(m),
+    what: 'Reading the page',
+    attempts,
+    run: async (_s, _p, input) => { calls.push(input); return { ok: true, data: { candidates: [] } }; },
+  });
+  t('a working read is not retried', calls.length === 1 && ok.ok === true);
+  t('a working read says nothing about retries', lines.length === 0);
+  t('a working read records no dead end', attempts.length === 0);
+}
+{
+  // Fails once, then works: one retry, with a longer settle, announced.
+  const calls = [];
+  const lines = [];
+  const attempts = [];
+  const res = await scanWithRetry('s', { navigateTo: 'x' }, {
+    log: (m) => lines.push(m),
+    what: 'Reading the page',
+    attempts,
+    run: async (_s, _p, input) => {
+      calls.push(input);
+      return calls.length === 1
+        ? { ok: false, reason: 'Page analysis timed out after 40 seconds' }
+        : { ok: true, data: { candidates: [] } };
+    },
+  });
+  t('a failed read is retried once', calls.length === 2);
+  t('the retry recovers', res.ok === true);
+  t('the retry waits longer than the first try', calls[1].settleMs > 0 && !('settleMs' in calls[0]));
+  t('the retry keeps the original navigation', calls[1].navigateTo === 'x');
+  t('the failure is announced', lines.some((l) => /Trying once more/i.test(l)));
+  t('the recovery is announced', lines.some((l) => /second attempt worked/i.test(l)));
+  t('the attempt log records the failure and the recovery',
+    attempts.length === 2 && attempts[0].outcome === 'failed' && attempts[1].outcome === 'recovered');
+  t('the failure reason is kept', attempts[0].reason.includes('timed out'));
+}
+{
+  // Fails twice: gives up, does not loop, and says so.
+  const calls = [];
+  const lines = [];
+  const attempts = [];
+  const res = await scanWithRetry('s', {}, {
+    log: (m) => lines.push(m),
+    what: 'Reading the page a second time',
+    attempts,
+    run: async () => { calls.push(1); return { ok: false, reason: 'No browser session' }; },
+  });
+  t('two failures stop, never loop', calls.length === 2);
+  t('the caller is told it failed', res.ok === false && res.reason === 'No browser session');
+  t('both failures are recorded', attempts.length === 2 && attempts.every((a) => a.outcome === 'failed'));
+  t('the second failure is announced', lines.some((l) => /second attempt failed too/i.test(l)));
+}
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

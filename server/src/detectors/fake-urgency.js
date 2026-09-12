@@ -125,9 +125,15 @@ const LAZY_SCROLL_PASSES = 4;
 /**
  * Run the scan, and if it fails outright, wait longer and run it once more.
  * Records what it tried so the finding can carry the recovery story.
+ *
+ * `run` is injectable so the retry behaviour can be tested without a browser.
+ * A dead URL will not exercise this path: Chromium renders its own error page
+ * rather than throwing, so the navigation succeeds and the thin-page guard
+ * below catches it instead. This branch is for webcmd-level failures, which are
+ * the ones worth retrying: a timed-out program, a lost session, a bad run.
  */
-async function scanWithRetry(sessionId, input, { log, what, attempts }) {
-  const first = await runProgram(sessionId, 'scan-countdown', input);
+export async function scanWithRetry(sessionId, input, { log, what, attempts, run = runProgram }) {
+  const first = await run(sessionId, 'scan-countdown', input);
   if (first.ok) return first;
 
   attempts.push({ step: what, outcome: 'failed', reason: first.reason });
@@ -136,7 +142,7 @@ async function scanWithRetry(sessionId, input, { log, what, attempts }) {
   // The alternate strategy: the same read, given substantially more time to
   // settle. If the first attempt navigated, the retry has to navigate too,
   // because a failed goto may have left the session somewhere unexpected.
-  const second = await runProgram(sessionId, 'scan-countdown', {
+  const second = await run(sessionId, 'scan-countdown', {
     ...input,
     settleMs: RETRY_SETTLE_MS,
   });
