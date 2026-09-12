@@ -1,0 +1,44 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# builds
+dist/
+build/
+*.tsbuildinfo
+
+# env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+
+# webcmd local state: browser profiles, session data, learned memory, traces
+.webcmd/
+webcmd-cache/
+webcmd-data/
+**/webcmd-profiles/
+**/*.webcmd-session
+traces/
+*.trace.zip
+
+# playwright
+playwright-report/
+test-results/
+.playwright/
+
+# runtime artifacts
+case-files/
+screenshots/
+*.log
+logs/
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

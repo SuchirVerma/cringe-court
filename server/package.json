@@ -1,0 +1,21 @@
+{
+  "name": "cringecourt-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CringeCourt backend: webcmd-driven dark pattern investigation, streamed over SSE.",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20.6.0"
+  },
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "test": "node test/logic.test.mjs",
+    "check": "node --check src/index.js && node --check src/investigate.js && node --check src/webcmd.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}
