@@ -42,10 +42,20 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
 
   let anyPageReached = false;
 
+  /*
+    Every candidate tried, and why it was passed over. Trying eight addresses is
+    itself the alternate-strategy ladder for this charge: a 404 on /account is
+    not a finding, it is a reason to try /my-account next. Recorded rather than
+    logged line by line, because eight lines of "that one was not there" buries
+    the moment that matters in the feed, and summarised once below.
+  */
+  const attempts = [];
+
   for (const target of targets.slice(0, 8)) {
     const run = await runProgram(sessionId, 'scan-cancel-flow', { navigateTo: target, maxDepth: 4 });
     if (!run.ok) {
       lastReason = run.reason;
+      attempts.push({ target, outcome: 'unreadable', reason: run.reason });
       continue;
     }
 
@@ -56,6 +66,7 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
     // that ends up quoted at the user as the reason for an unproven charge.
     if (!data || typeof data !== 'object' || !Array.isArray(data.trail)) {
       lastReason = 'the page did not return a readable navigation structure';
+      attempts.push({ target, outcome: 'unreadable', reason: lastReason });
       continue;
     }
 
@@ -63,10 +74,12 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
     // anything from a 404.
     if (data.notFound) {
       lastReason = `${target} returned ${data.httpStatus}`;
+      attempts.push({ target, outcome: 'not-found', status: data.httpStatus });
       continue;
     }
     anyPageReached = true;
     if (data.loginWall) {
+      attempts.push({ target, outcome: 'login-wall' });
       log('Exhibit B. Hit a sign-in wall. Cannot judge a cancellation flow we cannot enter.');
       return inconclusive(CHARGE, {
         tier,
@@ -74,16 +87,28 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
           'The subscription area is behind a sign-in wall. The cancellation flow cannot be examined without ' +
           'signing in, and this tool does not use accounts it was not given.',
         proof: `Reached ${data.trail?.[0]?.url || target} and was asked to sign in.`,
+        detail: { attempts, triedCount: attempts.length },
       });
     }
 
     // Prefer the run that actually located a cancel control; otherwise keep the
     // deepest honest attempt so we can report the exhaustive search.
     if (data.found) {
+      attempts.push({ target, outcome: 'found-cancel', depth: data.found.depth });
       best = { data, target };
       break;
     }
+    attempts.push({ target, outcome: 'no-cancel-here' });
     if (!best) best = { data, target };
+  }
+
+  // The search, said once, so the feed shows the work without drowning in it.
+  const missed = attempts.filter((a) => a.outcome === 'not-found' || a.outcome === 'unreadable').length;
+  if (missed > 0) {
+    log(
+      `Exhibit B. Tried ${attempts.length} account address${attempts.length === 1 ? '' : 'es'}; ` +
+        `${missed} ${missed === 1 ? 'was not there or could not be read' : 'were not there or could not be read'}.`,
+    );
   }
 
   if (!best) {
@@ -92,6 +117,7 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
       reason: anyPageReached
         ? `Reached the account area but could not analyse it. ${lastReason || ''}`.trim()
         : `No account or subscription page could be found on this site. ${lastReason || ''}`.trim(),
+      detail: { attempts, triedCount: attempts.length },
     });
   }
 
@@ -116,6 +142,7 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
           'Could not confirm we were inside a signed-in account, so the absence of a cancel control proves nothing. ' +
           'Judging a cancellation flow needs an account this tool was not given.',
         proof: `Visited ${data.trail.map((t) => t.title || t.url).join(' → ')} without reaching signed-in account pages.`,
+        detail: { attempts, triedCount: attempts.length, startedAt: target },
       });
     }
 
@@ -123,7 +150,7 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
     return violation(CHARGE, {
       tier,
       confidence: 'medium',
-      detail: { steps: data.steps, labelFound: null, exhausted: true },
+      detail: { steps: data.steps, labelFound: null, exhausted: true, attempts, startedAt: target },
       proof:
         `Started at ${target} and followed the subscription and billing links ${data.steps} level${data.steps === 1 ? '' : 's'} deep, ` +
         `inside a signed-in account. No cancel or unsubscribe control was reachable. ` +
@@ -139,13 +166,14 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
     log(`Exhibit B. Cancel reachable in ${steps} step${steps === 1 ? '' : 's'}, clearly labelled. No charge.`);
     return clear(CHARGE, {
       tier,
+      detail: { steps, labelFound: data.found.text, attempts, startedAt: target },
       proof:
         `Starting at ${target}, a clearly labelled "${data.found.text}" control was reachable in ` +
         `${steps} step${steps === 1 ? '' : 's'}. That is a cancellation flow a consumer can actually find.`,
     });
   }
 
-  const detail = { steps, labelFound: data.found.text, vagueOnly, exhausted: false };
+  const detail = { steps, labelFound: data.found.text, vagueOnly, exhausted: false, attempts, startedAt: target };
   log(`Exhibit B. Charge filed. Cancel is ${steps} step${steps === 1 ? '' : 's'} deep${vagueOnly ? ' and vaguely labelled' : ''}.`);
 
   return violation(CHARGE, {

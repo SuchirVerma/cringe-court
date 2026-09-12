@@ -3,6 +3,7 @@ import { buildVerdict } from '../src/verdict.js';
 import { resolveTier } from '../src/sites.js';
 import { normaliseUrl } from '../src/investigate.js';
 import { pairReadings, scanWithRetry } from '../src/detectors/fake-urgency.js';
+import { quipFor } from '../src/quips.js';
 
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) { pass++; console.log('  ok  ' + name); } else { fail++; console.log('  FAIL ' + name); } };
@@ -181,6 +182,27 @@ console.log('Retry and recovery');
   t('the caller is told it failed', res.ok === false && res.reason === 'No browser session');
   t('both failures are recorded', attempts.length === 2 && attempts.every((a) => a.outcome === 'failed'));
   t('the second failure is announced', lines.some((l) => /second attempt failed too/i.test(l)));
+}
+
+console.log('Quips land on the evidence');
+{
+  const deep = (steps) => quipFor('SUBSCRIPTION_TRAP', { steps, labelFound: 'Manage membership', vagueOnly: true });
+  t('a five-step cancel gets the wine tasting line', /wine tasting/.test(deep(5)));
+  t('a seven-step cancel gets it too', /wine tasting/.test(deep(7)));
+  t('a three-step cancel does not', !/wine tasting/.test(deep(3)));
+  t('the wine tasting line quotes the step count', deep(6).startsWith('6 steps'));
+  t('an exhausted search keeps its own line', /Simply absent/.test(quipFor('SUBSCRIPTION_TRAP', { exhausted: true, steps: 9 })));
+
+  // The house rule: never render a hole at the user.
+  const holes = [
+    quipFor('BASKET_SNEAKING', { chargeWord: 'insurance' }),
+    quipFor('BASKET_SNEAKING', {}),
+    quipFor('SUBSCRIPTION_TRAP', { steps: 5 }),
+    quipFor('SUBSCRIPTION_TRAP', {}),
+    quipFor('FALSE_URGENCY', {}),
+  ];
+  t('no quip renders undefined or null', holes.every((q) => q === null || (!q.includes('undefined') && !q.includes('null'))));
+  t('quips stay deterministic', quipFor('BASKET_SNEAKING', { chargeWord: 'tip', price: '₹9' }) === quipFor('BASKET_SNEAKING', { chargeWord: 'tip', price: '₹9' }));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

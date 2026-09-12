@@ -47,6 +47,7 @@ const QUIPS = {
   ],
 };
 
+
 /**
  * Deterministic index from the finding's own values, so the same evidence always
  * gets the same line.
@@ -66,6 +67,20 @@ export function quipFor(chargeId, detail = {}) {
   */
   if (chargeId === 'SUBSCRIPTION_TRAP' && detail.exhausted) {
     return 'There is no cancel control anywhere in the subscription area. Not buried, not disguised. Simply absent.';
+  }
+
+  /*
+    A cancellation five or more steps deep gets the line written for a search
+    that absurd. Left in the ordinary rotation it surfaced on about one set of
+    values in twenty and essentially never on the deep flows it describes, which
+    is the wrong way round: the strongest evidence should get the hardest line.
+  */
+  if (chargeId === 'SUBSCRIPTION_TRAP' && Number(detail.steps) >= 5) {
+    return (
+      `${detail.steps} steps to the exit` +
+      (detail.labelFound ? `, and the best label on offer is "${detail.labelFound}"` : '') +
+      '. Finding the cancel button here is harder than finding a sober person at a wine tasting.'
+    );
   }
 
   const list = QUIPS[chargeId];
