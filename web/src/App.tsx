@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useInvestigation } from './lib/useInvestigation';
 import { InvestigationFeed } from './components/InvestigationFeed';
 import { EvidenceCard } from './components/EvidenceCard';
 import { VerdictCard } from './components/VerdictCard';
+import { ChargeDocket } from './components/ChargeDocket';
+import { useHealth } from './lib/useHealth';
 import { PREVIEW_FINDINGS, PREVIEW_LOG, PREVIEW_VERDICT } from './lib/preview';
 
 const SUGGESTIONS = ['flipkart.com', 'myntra.com', 'swiggy.com', 'bookmyshow.com'];
@@ -19,8 +21,9 @@ export default function App() {
   const reduced = useReducedMotion();
   const [url, setUrl] = useState('');
   const live = useInvestigation();
-  const { status, error, target, activeCharge, start } = live;
+  const { status, error, target, activeCharge, start, stop } = live;
   const running = status === 'running';
+  const { unreachable, engineMissing, health } = useHealth();
 
   const log = PREVIEW ? PREVIEW_LOG : live.log;
   const findings = PREVIEW ? PREVIEW_FINDINGS : live.findings;
@@ -85,6 +88,29 @@ export default function App() {
             </p>
           )}
 
+          {(unreachable || engineMissing) && (
+            <div
+              role="alert"
+              className="mb-5 rounded-[3px] border px-4 py-3 text-[0.85rem] leading-relaxed"
+              style={{ borderColor: 'var(--color-unknown)', background: 'rgba(155,140,106,0.08)', color: '#e0d3b4' }}
+            >
+              {unreachable ? (
+                <>
+                  The court server is not answering. Start it with{' '}
+                  <code className="font-mono">npm start</code> in the <code className="font-mono">server</code> folder,
+                  then reload.
+                </>
+              ) : (
+                <>
+                  The browser engine is not available, so investigations cannot run. Install it with{' '}
+                  <code className="font-mono">npm install -g @agentrhq/webcmd</code> and run{' '}
+                  <code className="font-mono">webcmd doctor</code> once.
+                  {health?.engine.reason ? ` (${health.engine.reason})` : ''}
+                </>
+              )}
+            </div>
+          )}
+
           <form onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row">
             <label className="sr-only" htmlFor="url">
               Website address to investigate
@@ -113,6 +139,17 @@ export default function App() {
             >
               {running ? 'Court in session…' : 'Open the case'}
             </button>
+
+            {running && (
+              <button
+                type="button"
+                onClick={stop}
+                className="rounded-[3px] border px-4 py-3 text-[0.85rem] transition-colors"
+                style={{ borderColor: 'var(--color-panel-edge)', color: 'var(--color-ink-300)' }}
+              >
+                Adjourn
+              </button>
+            )}
           </form>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -161,8 +198,14 @@ export default function App() {
             </motion.div>
           )}
 
-          {(running || log.length > 0) && (
+          {(running || findings.length > 0) && (
             <div className="mt-6">
+              <ChargeDocket findings={findings} activeCharge={activeCharge} running={running} />
+            </div>
+          )}
+
+          {(running || log.length > 0) && (
+            <div className="mt-4">
               <InvestigationFeed lines={log} running={running} />
             </div>
           )}
@@ -182,20 +225,6 @@ export default function App() {
               </div>
             </section>
           )}
-
-          <AnimatePresence>
-            {activeCharge && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="mt-4 font-mono text-[0.7rem]"
-                style={{ color: 'var(--color-ink-600)' }}
-              >
-                Examining the next charge…
-              </motion.p>
-            )}
-          </AnimatePresence>
 
           {verdict && (
             <div className="mt-7">
