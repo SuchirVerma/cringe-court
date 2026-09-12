@@ -11,6 +11,29 @@ import { NOT_EXAMINED, GUIDELINES } from './law.js';
 
 const DEDUCTION = { high: 3, medium: 2, low: 1 };
 
+/*
+  The order's own identity: a case number, the bench that signed it, and the
+  sitting date. Cosmetic on the page, but it is what makes the verdict read as
+  a document rather than a results panel, so it is issued here with the ruling
+  rather than invented in the interface.
+
+  The number counts cases heard since the server started. It is honest about
+  what it is: the third case this session really is CC-2026-003.
+*/
+let heard = 0;
+
+const BENCH = 'Hon. Justice CringeCourt, sitting alone';
+
+function caseNumber(at) {
+  heard += 1;
+  return `CC-${at.getFullYear()}-${String(heard).padStart(3, '0')}`;
+}
+
+/** "12 September 2026", the way a cause list writes it. */
+function sittingDate(at) {
+  return at.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 export function buildVerdict({ url, host, tier, site, findings, startedAt }) {
   const violations = findings.filter((f) => f.outcome === OUTCOME.VIOLATION);
   const cleared = findings.filter((f) => f.outcome === OUTCOME.CLEAR);
@@ -31,6 +54,8 @@ export function buildVerdict({ url, host, tier, site, findings, startedAt }) {
   const ruled = guilty || determined > findings.length / 2;
   const score = ruled ? Math.max(1, 10 - penalty) : null;
 
+  const deliveredAt = new Date();
+
   return {
     ruled,
     determined,
@@ -39,6 +64,12 @@ export function buildVerdict({ url, host, tier, site, findings, startedAt }) {
     tier,
     siteName: site?.display ?? null,
     guilty,
+    order: {
+      caseNumber: caseNumber(deliveredAt),
+      defendant: host ?? url,
+      bench: BENCH,
+      sitting: sittingDate(deliveredAt),
+    },
     headline: headlineFor(guilty, violations.length, inconclusive.length, ruled, determined, findings.length),
     score,
     outOf: 10,
@@ -62,8 +93,8 @@ export function buildVerdict({ url, host, tier, site, findings, startedAt }) {
     },
     citation: GUIDELINES,
     startedAt,
-    deliveredAt: new Date().toISOString(),
-    durationMs: startedAt ? Date.now() - new Date(startedAt).getTime() : null,
+    deliveredAt: deliveredAt.toISOString(),
+    durationMs: startedAt ? deliveredAt.getTime() - new Date(startedAt).getTime() : null,
   };
 }
 

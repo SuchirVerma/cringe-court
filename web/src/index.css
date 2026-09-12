@@ -130,6 +130,129 @@ body {
   line-height: 1.65;
 }
 
+/* The cursor on the line currently being typed. It only ever exists on one. */
+.caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: -0.12em;
+  background: var(--color-stamp);
+  opacity: 0.8;
+  animation: blink 0.85s steps(1, end) infinite;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 0.8;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/*
+  The room shakes once when the gavel lands. It is applied to the content
+  wrapper rather than the body: shaking the body moves the fixed environment
+  layer with it and the whole page appears to come loose.
+*/
+.shake {
+  animation: shake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes shake {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  16% {
+    transform: translate3d(-5px, 3px, 0);
+  }
+  34% {
+    transform: translate3d(4px, -3px, 0);
+  }
+  52% {
+    transform: translate3d(-3px, 2px, 0);
+  }
+  70% {
+    transform: translate3d(2px, -1px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* A charge landing: the room reddens for a moment, then lets go. */
+.gallery-pulse {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: radial-gradient(ellipse 120% 80% at 50% 50%, transparent 42%, rgba(176, 55, 36, 0.34) 100%);
+  animation: pulse-once 760ms var(--ease-settle) forwards;
+}
+
+@keyframes pulse-once {
+  0% {
+    opacity: 0;
+  }
+  22% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Dust in the light, behind the gavel. Seven motes, each on its own clock. */
+.chamber-dust {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.chamber-dust span {
+  position: absolute;
+  top: 50%;
+  left: calc(8% + var(--i) * 13%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(236, 228, 214, 0.5);
+  /* Negative delays, so every mote is already mid-drift at first paint. */
+  animation: mote 9s linear infinite calc(var(--i) * -1.4s);
+}
+
+@keyframes mote {
+  0% {
+    transform: translate3d(0, 42vh, 0);
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.65;
+  }
+  86% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(18px, -42vh, 0);
+    opacity: 0;
+  }
+}
+
+/*
+  The order's masthead stays with the reader as the clauses pass under it, the
+  way a physical order is held at the top while you read down it. Plain sticky:
+  no JavaScript, so it cannot get stuck in a half-applied state.
+*/
+.order-masthead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, var(--color-paper) 74%, rgba(236, 228, 214, 0) 100%);
+}
+
 /* Focus is visible and in the accent, everywhere. */
 :where(a, button, input, [tabindex]):focus-visible {
   outline: 2px solid var(--color-stamp);
@@ -178,5 +301,12 @@ body {
   }
   .desk-environment::after {
     animation: none;
+  }
+  /* The drives are gated in JavaScript too, but nothing decorative should be
+     left mid-animation if one ever reaches the page. */
+  .chamber-dust,
+  .caret,
+  .gallery-pulse {
+    display: none;
   }
 }

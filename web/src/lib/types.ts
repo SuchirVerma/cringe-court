@@ -27,6 +27,8 @@ export interface Verdict {
   guilty: boolean;
   ruled: boolean;
   determined: number;
+  /** The order's own identity, issued with the ruling. */
+  order: { caseNumber: string; defendant: string; bench: string; sitting: string };
   headline: string;
   score: number | null;
   outOf: number;

@@ -1,12 +1,14 @@
-import { useState, type FormEvent } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useInvestigation } from './lib/useInvestigation';
 import { InvestigationFeed } from './components/InvestigationFeed';
 import { EvidenceCard } from './components/EvidenceCard';
 import { VerdictCard } from './components/VerdictCard';
 import { ChargeDocket } from './components/ChargeDocket';
+import { LoadingSequence } from './components/LoadingSequence';
 import { useHealth } from './lib/useHealth';
 import { PREVIEW_FINDINGS, PREVIEW_LOG, PREVIEW_VERDICT } from './lib/preview';
+import { docketStack } from './animations/framerVariants';
 
 const SUGGESTIONS = ['flipkart.com', 'myntra.com', 'swiggy.com', 'bookmyshow.com'];
 
@@ -29,10 +31,52 @@ export default function App() {
   const findings = PREVIEW ? PREVIEW_FINDINGS : live.findings;
   const verdict = PREVIEW ? PREVIEW_VERDICT : live.verdict;
 
+  /*
+    The court coming to order. The overlay plays over an investigation that has
+    already started, so the gavel never costs the demo a second: `start` is
+    called first and the sequence runs on top of it.
+  */
+  const [opening, setOpening] = useState<string | null>(null);
+  const [shaking, setShaking] = useState(false);
+  const shakeTimer = useRef<number | null>(null);
+
+  const onImpact = useCallback(() => {
+    setShaking(true);
+    if (shakeTimer.current !== null) window.clearTimeout(shakeTimer.current);
+    shakeTimer.current = window.setTimeout(() => setShaking(false), 440);
+  }, []);
+
+  const onOpened = useCallback(() => setOpening(null), []);
+
+  useEffect(
+    () => () => {
+      if (shakeTimer.current !== null) window.clearTimeout(shakeTimer.current);
+    },
+    [],
+  );
+
+  /*
+    A charge landing reddens the room once. It fires on the transition from
+    "no violations yet" to "a violation has arrived", tracked by count rather
+    than by watching the array, so a re-render can never fire it twice.
+  */
+  const [pulse, setPulse] = useState(0);
+  const violationCount = findings.filter((f) => f.outcome === 'violation').length;
+  const lastViolations = useRef(violationCount);
+
+  useEffect(() => {
+    if (violationCount > lastViolations.current && !reduced) {
+      setPulse((n) => n + 1);
+    }
+    lastViolations.current = violationCount;
+  }, [violationCount, reduced]);
+
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (!url.trim() || running) return;
-    start(url.trim());
+    const target = url.trim();
+    if (!target || running) return;
+    start(target);
+    if (!reduced) setOpening(target);
   };
 
   return (
@@ -42,12 +86,30 @@ export default function App() {
         Skip to content
       </a>
 
+      <AnimatePresence>
+        {opening && (
+          <LoadingSequence key="opening" host={opening} onImpact={onImpact} onDone={onOpened} />
+        )}
+      </AnimatePresence>
+
+      {/*
+        One shot per charge. The key changes, so React swaps the element and the
+        animation restarts from the top; it ends transparent and stays out of
+        the way. Nothing removes it by hand: reaching into React's DOM to delete
+        a node it still owns throws the next time it tries to touch it.
+      */}
+      {pulse > 0 && !reduced && <div key={pulse} className="gallery-pulse" aria-hidden="true" />}
+
       {/*
         The content sits in its own positioned layer above the fixed environment.
         Without this it is painted underneath it: a fixed element with z-index 0
         wins against static siblings, however far down the document they are.
       */}
-      <div className="relative z-10 mx-auto w-full max-w-[900px] px-5 py-10 sm:px-8 sm:py-14">
+      <div
+        className={`relative z-10 mx-auto w-full max-w-[900px] px-5 py-10 sm:px-8 sm:py-14 ${
+          shaking ? 'shake' : ''
+        }`}
+      >
         <header>
           <div className="flex items-center gap-3">
             <Gavel />
@@ -218,11 +280,20 @@ export default function App() {
               >
                 The evidence
               </h2>
-              <div className="mt-3 space-y-4">
+              {/*
+                The stagger lives here, on the stack, so an exhibit arriving
+                cannot restart the entrance of the ones already on the desk.
+              */}
+              <motion.div
+                className="mt-3 space-y-4"
+                variants={docketStack(reduced)}
+                initial="hidden"
+                animate="shown"
+              >
                 {findings.map((finding, i) => (
                   <EvidenceCard key={finding.chargeId} finding={finding} index={i} />
                 ))}
-              </div>
+              </motion.div>
             </section>
           )}
 

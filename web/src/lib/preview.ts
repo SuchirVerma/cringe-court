@@ -80,6 +80,12 @@ export const PREVIEW_VERDICT: Verdict = {
   tier: 2,
   siteName: null,
   guilty: true,
+  order: {
+    caseNumber: 'CC-2026-001',
+    defendant: 'example.com',
+    bench: 'Hon. Justice CringeCourt, sitting alone',
+    sitting: '12 September 2026',
+  },
   headline: 'Guilty on two counts.',
   score: 4,
   ruled: true,

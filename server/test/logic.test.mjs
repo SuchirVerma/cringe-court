@@ -62,5 +62,19 @@ const oneViolationMostlyUnknown = buildVerdict({ url:'https://x.com', host:'x.co
   findings: [v, inconclusive('SUBSCRIPTION_TRAP',{tier:2,reason:'r'}), inconclusive('BASKET_SNEAKING',{tier:2,reason:'r'})] });
 t('still rules when a violation was proven', oneViolationMostlyUnknown.ruled === true && oneViolationMostlyUnknown.score === 7);
 
+console.log('The order');
+// Every verdict above already drew a case number, so these are simply the next two.
+const orderA = buildVerdict({ url:'https://x.com', host:'x.com', tier:2, site:null, startedAt:new Date().toISOString(),
+  findings: [clear('FALSE_URGENCY',{tier:2,proof:'p'})] });
+const orderB = buildVerdict({ url:'https://y.com', host:'y.com', tier:2, site:null, startedAt:new Date().toISOString(),
+  findings: [clear('FALSE_URGENCY',{tier:2,proof:'p'})] });
+t('case number is formatted', /^CC-\d{4}-\d{3}$/.test(orderA.order.caseNumber));
+t('case number advances per hearing', orderA.order.caseNumber !== orderB.order.caseNumber);
+t('defendant is named', orderA.order.defendant === 'x.com');
+t('falls back to the url when there is no host', buildVerdict({ url:'https://z.com', host:null, tier:2, site:null,
+  startedAt:new Date().toISOString(), findings: [clear('FALSE_URGENCY',{tier:2,proof:'p'})] }).order.defendant === 'https://z.com');
+t('the bench is named', typeof orderA.order.bench === 'string' && orderA.order.bench.length > 0);
+t('sitting date is written out', /\d{4}/.test(orderA.order.sitting) && !orderA.order.sitting.includes('Invalid'));
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

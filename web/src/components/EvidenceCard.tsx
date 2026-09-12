@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import type { Finding } from '../lib/types';
 import { Stamp } from './Stamp';
+import { exhibitDrop } from '../animations/framerVariants';
 
 /**
  * One exhibit, laid onto the desk.
@@ -15,15 +16,11 @@ export function EvidenceCard({ finding, index }: { finding: Finding; index: numb
   const reduced = useReducedMotion();
   const isViolation = finding.outcome === 'violation';
 
-  const enter = reduced
-    ? { opacity: 1, y: 0, rotate: 0 }
-    : { opacity: 1, y: 0, rotate: index % 2 === 0 ? -0.35 : 0.4 };
-
   return (
     <motion.article
-      initial={reduced ? { opacity: 0 } : { opacity: 0, y: 26, rotate: index % 2 === 0 ? -2.4 : 2.6 }}
-      animate={enter}
-      transition={reduced ? { duration: 0.001 } : { duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      variants={exhibitDrop(reduced, index)}
+      initial="hidden"
+      animate="shown"
       className={
         isViolation
           ? 'paper taped relative overflow-hidden rounded-[3px] pl-6 pr-5 py-5'

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { LogLine } from '../lib/types';
+import { Typewriter } from './Typewriter';
 
 /**
  * The agent thinking out loud.
@@ -20,6 +21,21 @@ export function InvestigationFeed({ lines, running }: { lines: LogLine[]; runnin
     const box = boxRef.current;
     if (!box || !pinned.current) return;
     box.scrollTop = box.scrollHeight;
+
+    /*
+      The newest line is still typing, so it grows after this effect has run and
+      can push itself under the fold. Follow it while it types, then stop: a
+      short rAF loop rather than a timer, so it costs nothing once it is done.
+    */
+    let frame = 0;
+    const until = performance.now() + 560;
+    const follow = (now: number) => {
+      if (!pinned.current || now > until) return;
+      box.scrollTop = box.scrollHeight;
+      frame = requestAnimationFrame(follow);
+    };
+    frame = requestAnimationFrame(follow);
+    return () => cancelAnimationFrame(frame);
   }, [lines]);
 
   const onScroll = () => {
@@ -61,7 +77,7 @@ export function InvestigationFeed({ lines, running }: { lines: LogLine[]; runnin
         )}
 
         <AnimatePresence initial={false}>
-          {lines.map((line) => (
+          {lines.map((line, i) => (
             <motion.p
               key={line.id}
               initial={reduced ? { opacity: 1 } : { opacity: 0, x: -6 }}
@@ -73,7 +89,14 @@ export function InvestigationFeed({ lines, running }: { lines: LogLine[]; runnin
               <span aria-hidden="true" style={{ color: 'var(--color-ink-700)' }}>
                 ›
               </span>
-              <span className="min-w-0">{line.message}</span>
+              {/*
+                Only the newest line types. Everything above it is already on the
+                record, and a page of text retyping itself on every new line
+                would be unreadable.
+              */}
+              <span className="min-w-0">
+                <Typewriter text={line.message} enabled={i === lines.length - 1} />
+              </span>
             </motion.p>
           ))}
         </AnimatePresence>
