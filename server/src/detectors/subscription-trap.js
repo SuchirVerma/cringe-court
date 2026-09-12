@@ -29,9 +29,26 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
   const targets = [];
   if (tier === 1 && site) {
     const u = new URL(url);
-    const known = [...(profile?.subscriptionPaths || site.subscriptionPaths || []), ...(profile?.accountPaths || site.accountPaths || [])];
+    // Learned order first when there is one, so the address that opened last
+    // time is tried before the ones that 404'd. Same honesty rule as the cart:
+    // only call it learned when it actually is.
+    /*
+      A learned search order beats the seed's, because it puts the addresses
+      that actually opened ahead of the ones that 404'd. Without it the run
+      spends its first navigation on a page exploration already proved is not
+      there. Only call it learned when it actually is.
+    */
+    const learnedOrder = profile?.accountSearchOrder?.length ? profile.accountSearchOrder : null;
+    const known = learnedOrder || [
+      ...(site.subscriptionPaths || []),
+      ...(site.accountPaths || []),
+    ];
     targets.push(...known.map((p) => `${u.protocol}//${u.host}${p}`));
-    log(`Exhibit B. Starting from the known subscription pages for ${site.display}.`);
+    log(
+      learnedOrder
+        ? `Exhibit B. Using the learned account map for ${site.display}.`
+        : `Exhibit B. No learned account map for ${site.display} yet, so using the seed pages.`,
+    );
   } else {
     log('Exhibit B. Looking for an account or subscription area.');
   }

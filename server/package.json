@@ -18,7 +18,9 @@
     "test:bc": "node test/exhibits-bc.live.mjs",
     "explore": "node src/explore.js",
     "fixture": "python3 -m http.server 8080 --directory test-site",
-    "check": "node --check src/index.js && node --check src/investigate.js && node --check src/webcmd.js"
+    "check": "node --check src/index.js && node --check src/investigate.js && node --check src/webcmd.js",
+    "test:named": "node test/named-sites.live.mjs",
+    "explore:all": "node src/explore.js all"
   },
   "dependencies": {
     "cors": "^2.8.5",

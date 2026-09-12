@@ -1,0 +1,113 @@
+{
+  "display": "Swiggy",
+  "urgency": {
+    "surfaces": [
+      "/offers",
+      "/",
+      "/restaurants"
+    ],
+    "scrollPasses": 3,
+    "keepPathPatterns": [
+      "/offers",
+      "/restaurants",
+      "/menu"
+    ],
+    "surface": "/restaurants"
+  },
+  "cartPaths": [
+    "/checkout"
+  ],
+  "subscriptionPaths": [
+    "/one"
+  ],
+  "accountPaths": [
+    "/my-account"
+  ],
+  "accountSearchOrder": [
+    "/my-account",
+    "/one"
+  ],
+  "explored": {
+    "surfaces": [
+      {
+        "path": "/",
+        "reachable": true,
+        "landedOn": "https://www.swiggy.com/",
+        "title": "Order Food & Groceries. Discover the best restaurants. Swiggy it!",
+        "textLength": 7413,
+        "substantive": true,
+        "candidateCount": 0,
+        "kinds": [],
+        "samples": [],
+        "namedSelectorsFound": [],
+        "namedSelectorsMissing": []
+      },
+      {
+        "path": "/offers",
+        "reachable": true,
+        "landedOn": "https://www.swiggy.com/offers",
+        "title": "Order food online from India's best food delivery service. Order from restaurant",
+        "textLength": 92,
+        "substantive": false,
+        "candidateCount": 0,
+        "kinds": [],
+        "samples": [],
+        "namedSelectorsFound": [],
+        "namedSelectorsMissing": []
+      },
+      {
+        "path": "/restaurants",
+        "reachable": true,
+        "landedOn": "https://www.swiggy.com/restaurants",
+        "title": "Order Food Online from India's Best Food Delivery Service | Swiggy",
+        "textLength": 5653,
+        "substantive": true,
+        "candidateCount": 0,
+        "kinds": [],
+        "samples": [],
+        "namedSelectorsFound": [],
+        "namedSelectorsMissing": []
+      }
+    ],
+    "carts": [
+      {
+        "path": "/checkout",
+        "reachable": true,
+        "readable": true,
+        "isCart": true,
+        "looksEmpty": true,
+        "checkboxes": 0,
+        "preTicked": 0,
+        "reason": null,
+        "worked": true
+      }
+    ],
+    "accounts": [
+      {
+        "path": "/one",
+        "reachable": true,
+        "readable": true,
+        "notFound": true,
+        "httpStatus": 404,
+        "loginWall": false,
+        "foundCancel": false,
+        "reason": null,
+        "worked": false
+      },
+      {
+        "path": "/my-account",
+        "reachable": true,
+        "readable": true,
+        "notFound": false,
+        "httpStatus": null,
+        "loginWall": true,
+        "foundCancel": false,
+        "reason": null,
+        "worked": true
+      }
+    ],
+    "summary": "No countdown or scarcity claim was displayed on any surface explored. Cart reachable at /checkout. Account area reachable at /my-account, behind a sign-in wall."
+  },
+  "siteKey": "swiggy.com",
+  "learnedAt": "2026-09-12T08:19:52.559Z"
+}

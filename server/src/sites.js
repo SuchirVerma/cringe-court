@@ -70,6 +70,14 @@ export const NAMED_SITES = {
     accountPaths: ['/account'],
     subscriptionPaths: ['/plus', '/account/subscriptions'],
     urgencySurfaces: ['Big Billion / deal countdowns', 'stock-left ribbons'],
+    urgency: {
+      // Candidates, not a guess. Exploration tries each and the profile keeps
+      // whichever actually carried a claim; no selector is named here because
+      // none has been observed on this site yet.
+      surfaces: ['/offers-store', '/deals', '/'],
+      scrollPasses: 4,
+      keepPathPatterns: ['/p/', '/offers', '/deals', '/itm'],
+    },
     notes: 'Cart routinely carries a pre-selected protection plan. Prime basket-sneaking ground.',
   },
   'myntra.com': {
@@ -80,6 +88,11 @@ export const NAMED_SITES = {
     accountPaths: ['/my/profile'],
     subscriptionPaths: ['/my/insider'],
     urgencySurfaces: ['end-of-reason-sale banners', 'few-left badges'],
+    urgency: {
+      surfaces: ['/shop/deals', '/deals', '/'],
+      scrollPasses: 4,
+      keepPathPatterns: ['/buy', '/shop/', '/deals'],
+    },
     notes: 'Cart offers donation and packaging add-ons; check their default state.',
   },
   'zomato.com': {
@@ -90,6 +103,11 @@ export const NAMED_SITES = {
     accountPaths: ['/profile'],
     subscriptionPaths: ['/gold', '/district/gold'],
     urgencySurfaces: ['offer-expiry strips', 'delivery-time pressure'],
+    urgency: {
+      surfaces: ['/offers', '/india/offers', '/'],
+      scrollPasses: 3,
+      keepPathPatterns: ['/offers', '/restaurant', '/order'],
+    },
     notes: 'Feeding India donation line and Gold renewal are the surfaces of interest.',
   },
   'swiggy.com': {
@@ -100,6 +118,11 @@ export const NAMED_SITES = {
     accountPaths: ['/my-account'],
     subscriptionPaths: ['/one'],
     urgencySurfaces: ['coupon countdowns', 'surge messaging'],
+    urgency: {
+      surfaces: ['/offers', '/', '/restaurants'],
+      scrollPasses: 3,
+      keepPathPatterns: ['/offers', '/restaurants', '/menu'],
+    },
     notes: 'Checkout adds tips, donations and platform fees. Watch defaults, not presence.',
   },
   'bookmyshow.com': {
@@ -110,6 +133,17 @@ export const NAMED_SITES = {
     accountPaths: ['/accounts'],
     subscriptionPaths: ['/accounts/subscriptions'],
     urgencySurfaces: ['seat-hold timers (legitimate)', 'fast-filling badges'],
+    urgency: {
+      /*
+        Seat-hold timers here are genuine inventory locks and count down for
+        real, so this site is the false-positive test for Exhibit A as much as a
+        detection target: a timer that honestly falls must be cleared, not
+        charged.
+      */
+      surfaces: ['/explore/offers', '/offers', '/'],
+      scrollPasses: 3,
+      keepPathPatterns: ['/movies', '/events', '/buytickets', '/offers'],
+    },
     notes:
       'Seat-hold timers are genuine inventory locks. The detector must not cry wolf ' +
       'on a timer that actually counts down and actually expires.',

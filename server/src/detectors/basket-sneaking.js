@@ -24,14 +24,20 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
   const targets = [];
   if (tier === 1 && site) {
     const u = new URL(url);
-    const known = profile?.cartPaths || site.cartPaths || [];
+    /*
+      Say which map this actually is, not merely whether a profile file exists.
+      A profile learned before cart exploration existed carries no cartPaths,
+      and announcing "using the learned profile to find the cart" while quietly
+      falling back to the seed list is the exact overclaim the tier distinction
+      is supposed to be honest about.
+    */
+    const learned = profile?.cartPaths?.length ? profile.cartPaths : null;
+    const known = learned || site.cartPaths || [];
     targets.push(...known.map((p) => `${u.protocol}//${u.host}${p}`));
-    // Say which one it actually is. Claiming a learned profile we do not have
-    // undermines the one moment in the run where that distinction is the point.
     log(
-      profile
-        ? `Exhibit C. Using the learned profile for ${site.display} to find the cart.`
-        : `Exhibit C. No learned profile yet, so using the seed map for ${site.display} to find the cart.`,
+      learned
+        ? `Exhibit C. Using the learned cart map for ${site.display}.`
+        : `Exhibit C. No learned cart map for ${site.display} yet, so using the seed map.`,
     );
   } else {
     log('Exhibit C. Unfamiliar site, so looking for a cart the general way.');

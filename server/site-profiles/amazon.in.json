@@ -27,8 +27,28 @@
       "/deals",
       "/gp/goldbox",
       "/events/"
+    ],
+    "surfaces": [
+      "/deals"
     ]
   },
+  "cartPaths": [
+    "/gp/cart/view.html",
+    "/cart"
+  ],
+  "subscriptionPaths": [
+    "/gp/primecentral",
+    "/auto-deliveries"
+  ],
+  "accountPaths": [
+    "/gp/primecentral",
+    "/gp/css/homepage.html"
+  ],
+  "accountSearchOrder": [
+    "/gp/css/homepage.html",
+    "/gp/primecentral",
+    "/auto-deliveries"
+  ],
   "explored": {
     "surfaces": [
       {
@@ -36,6 +56,8 @@
         "reachable": true,
         "landedOn": "https://www.amazon.in/",
         "title": "Online Shopping site in India: Shop Online for Mobiles, Books, Watches, Shoes an",
+        "textLength": 13671,
+        "substantive": true,
         "candidateCount": 0,
         "kinds": [],
         "samples": [],
@@ -51,6 +73,8 @@
         "reachable": true,
         "landedOn": "https://www.amazon.in/deals",
         "title": "Amazon.in - Deals",
+        "textLength": 6291,
+        "substantive": true,
         "candidateCount": 0,
         "kinds": [],
         "samples": [],
@@ -62,8 +86,67 @@
         ]
       }
     ],
-    "summary": "No countdown or scarcity claim was displayed on any surface explored."
+    "carts": [
+      {
+        "path": "/gp/cart/view.html",
+        "reachable": true,
+        "readable": true,
+        "isCart": true,
+        "looksEmpty": true,
+        "checkboxes": 0,
+        "preTicked": 0,
+        "reason": null,
+        "worked": true
+      },
+      {
+        "path": "/cart",
+        "reachable": true,
+        "readable": true,
+        "isCart": true,
+        "looksEmpty": true,
+        "checkboxes": 0,
+        "preTicked": 0,
+        "reason": null,
+        "worked": true
+      }
+    ],
+    "accounts": [
+      {
+        "path": "/gp/primecentral",
+        "reachable": true,
+        "readable": true,
+        "notFound": false,
+        "httpStatus": null,
+        "loginWall": true,
+        "foundCancel": false,
+        "reason": null,
+        "worked": true
+      },
+      {
+        "path": "/auto-deliveries",
+        "reachable": true,
+        "readable": false,
+        "notFound": false,
+        "httpStatus": null,
+        "loginWall": false,
+        "foundCancel": false,
+        "reason": null,
+        "worked": false
+      },
+      {
+        "path": "/gp/css/homepage.html",
+        "reachable": true,
+        "readable": true,
+        "notFound": false,
+        "httpStatus": null,
+        "loginWall": false,
+        "foundCancel": false,
+        "reason": null,
+        "worked": true
+      }
+    ],
+    "summary": "No countdown or scarcity claim was displayed on any surface explored. Cart reachable at /gp/cart/view.html, /cart. Account area reachable at /gp/primecentral, /auto-deliveries, /gp/css/homepage.html, behind a sign-in wall."
   },
   "siteKey": "amazon.in",
-  "learnedAt": "2026-09-12T07:08:29.341Z"
+  "learnedAt": "2026-09-12T08:17:27.976Z"
 }

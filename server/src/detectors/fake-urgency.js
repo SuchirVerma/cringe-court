@@ -50,10 +50,17 @@ function surfacePlan({ url, site, profile }) {
     return { target: url, redirected: false, selectors, scrollPasses };
   }
 
-  if (!knowledge.surface) return { target: url, redirected: false, selectors, scrollPasses };
+  /*
+    A learned profile names the one surface that actually carried a claim. A
+    seed that has not been explored yet may only offer a list of candidates, in
+    which case take the first: it is a starting point, and the scroll-and-retry
+    ladder below covers a surface that turns out to be empty.
+  */
+  const surface = knowledge.surface || knowledge.surfaces?.[0] || null;
+  if (!surface) return { target: url, redirected: false, selectors, scrollPasses };
 
   return {
-    target: origin + knowledge.surface,
+    target: origin + surface,
     redirected: true,
     from: path,
     selectors,

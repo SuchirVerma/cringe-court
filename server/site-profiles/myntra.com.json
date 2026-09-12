@@ -1,0 +1,113 @@
+{
+  "display": "Myntra",
+  "urgency": {
+    "surfaces": [
+      "/shop/deals",
+      "/deals",
+      "/"
+    ],
+    "scrollPasses": 4,
+    "keepPathPatterns": [
+      "/buy",
+      "/shop/",
+      "/deals"
+    ],
+    "surface": "/shop/deals"
+  },
+  "cartPaths": [
+    "/checkout/cart"
+  ],
+  "subscriptionPaths": [
+    "/my/insider"
+  ],
+  "accountPaths": [
+    "/my/profile"
+  ],
+  "accountSearchOrder": [
+    "/my/profile",
+    "/my/insider"
+  ],
+  "explored": {
+    "surfaces": [
+      {
+        "path": "/",
+        "reachable": true,
+        "landedOn": "https://www.myntra.com/",
+        "title": "Online Shopping for Women, Men, Kids Fashion & Lifestyle - Myntra",
+        "textLength": 14800,
+        "substantive": true,
+        "candidateCount": 0,
+        "kinds": [],
+        "samples": [],
+        "namedSelectorsFound": [],
+        "namedSelectorsMissing": []
+      },
+      {
+        "path": "/shop/deals",
+        "reachable": true,
+        "landedOn": "https://www.myntra.com/deals",
+        "title": "Myntra Deals - Exclusive Myntra Offers & Discounts",
+        "textLength": 5576,
+        "substantive": true,
+        "candidateCount": 0,
+        "kinds": [],
+        "samples": [],
+        "namedSelectorsFound": [],
+        "namedSelectorsMissing": []
+      },
+      {
+        "path": "/deals",
+        "reachable": true,
+        "landedOn": "https://www.myntra.com/deals",
+        "title": "Myntra Deals - Exclusive Myntra Offers & Discounts",
+        "textLength": 5588,
+        "substantive": true,
+        "candidateCount": 0,
+        "kinds": [],
+        "samples": [],
+        "namedSelectorsFound": [],
+        "namedSelectorsMissing": []
+      }
+    ],
+    "carts": [
+      {
+        "path": "/checkout/cart",
+        "reachable": true,
+        "readable": true,
+        "isCart": true,
+        "looksEmpty": false,
+        "checkboxes": 0,
+        "preTicked": 0,
+        "reason": null,
+        "worked": true
+      }
+    ],
+    "accounts": [
+      {
+        "path": "/my/insider",
+        "reachable": true,
+        "readable": true,
+        "notFound": true,
+        "httpStatus": 404,
+        "loginWall": false,
+        "foundCancel": false,
+        "reason": null,
+        "worked": false
+      },
+      {
+        "path": "/my/profile",
+        "reachable": true,
+        "readable": true,
+        "notFound": false,
+        "httpStatus": null,
+        "loginWall": true,
+        "foundCancel": false,
+        "reason": null,
+        "worked": true
+      }
+    ],
+    "summary": "No countdown or scarcity claim was displayed on any surface explored. Cart reachable at /checkout/cart. Account area reachable at /my/profile, behind a sign-in wall."
+  },
+  "siteKey": "myntra.com",
+  "learnedAt": "2026-09-12T08:18:41.497Z"
+}

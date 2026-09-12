@@ -1,0 +1,114 @@
+{
+  "display": "BookMyShow",
+  "urgency": {
+    "surfaces": [
+      "/explore/offers",
+      "/offers",
+      "/"
+    ],
+    "scrollPasses": 3,
+    "keepPathPatterns": [
+      "/movies",
+      "/events",
+      "/buytickets",
+      "/offers"
+    ],
+    "surface": "/explore/offers"
+  },
+  "cartPaths": [
+    "/checkout"
+  ],
+  "subscriptionPaths": [
+    "/accounts/subscriptions"
+  ],
+  "accountPaths": [
+    "/accounts"
+  ],
+  "accountSearchOrder": [
+    "/accounts",
+    "/accounts/subscriptions"
+  ],
+  "explored": {
+    "surfaces": [
+      {
+        "path": "/",
+        "reachable": true,
+        "landedOn": "https://in.bookmyshow.com/",
+        "title": "Movie Tickets, Plays, Sports, Events & Cinemas nearby - BookMyShow",
+        "textLength": 3402,
+        "substantive": true,
+        "candidateCount": 0,
+        "kinds": [],
+        "samples": [],
+        "namedSelectorsFound": [],
+        "namedSelectorsMissing": []
+      },
+      {
+        "path": "/explore/offers",
+        "reachable": true,
+        "landedOn": "https://in.bookmyshow.com/explore/offers",
+        "title": "Movie Ticket Offers - Promo Codes, Deals & Discount Coupons Today – BookMyShow",
+        "textLength": 8058,
+        "substantive": true,
+        "candidateCount": 0,
+        "kinds": [],
+        "samples": [],
+        "namedSelectorsFound": [],
+        "namedSelectorsMissing": []
+      },
+      {
+        "path": "/offers",
+        "reachable": true,
+        "landedOn": "https://in.bookmyshow.com/offers",
+        "title": "Movie Ticket Offers - Promo Codes, Deals & Discount Coupons Today – BookMyShow",
+        "textLength": 17903,
+        "substantive": true,
+        "candidateCount": 0,
+        "kinds": [],
+        "samples": [],
+        "namedSelectorsFound": [],
+        "namedSelectorsMissing": []
+      }
+    ],
+    "carts": [
+      {
+        "path": "/checkout",
+        "reachable": true,
+        "readable": true,
+        "isCart": false,
+        "looksEmpty": false,
+        "checkboxes": 0,
+        "preTicked": 0,
+        "reason": null,
+        "worked": true
+      }
+    ],
+    "accounts": [
+      {
+        "path": "/accounts/subscriptions",
+        "reachable": true,
+        "readable": true,
+        "notFound": true,
+        "httpStatus": 404,
+        "loginWall": false,
+        "foundCancel": false,
+        "reason": null,
+        "worked": false
+      },
+      {
+        "path": "/accounts",
+        "reachable": true,
+        "readable": true,
+        "notFound": false,
+        "httpStatus": null,
+        "loginWall": true,
+        "foundCancel": false,
+        "reason": null,
+        "worked": true
+      }
+    ],
+    "summary": "No countdown or scarcity claim was displayed on any surface explored. No cart page presented as a basket while signed out. Account area reachable at /accounts, behind a sign-in wall."
+  },
+  "siteKey": "bookmyshow.com",
+  "learnedAt": "2026-09-12T08:20:20.288Z"
+}
