@@ -60,6 +60,80 @@ export function exhibitDrop(reduced: boolean | null, index: number): Variants {
   };
 }
 
+/**
+ * An exhibit turned face-up on the desk.
+ *
+ * The 3D flip, done as paper does it: the card arrives edge-on and rotates
+ * about its top edge until it lies flat, rather than spinning on its vertical
+ * axis like a playing card, because a filed document is turned over, not
+ * twirled. It carries the same slight off-square rest as the drop, so a
+ * flipped exhibit and a dropped one sit on the same desk.
+ *
+ * `transformPerspective` lives on the element itself so no parent needs a
+ * perspective container, and the stamp's own delay still lands after the paper
+ * has settled.
+ */
+export function exhibitFlip(reduced: boolean | null, index: number): Variants {
+  const rest = index % 2 === 0 ? -0.35 : 0.4;
+  if (reduced) {
+    return {
+      hidden: { opacity: 0, rotateX: 0, y: 0, rotate: rest, transformPerspective: 900 },
+      shown: { opacity: 1, rotateX: 0, y: 0, rotate: rest, transformPerspective: 900, transition: INSTANT },
+    };
+  }
+  return {
+    hidden: { opacity: 0, rotateX: -84, y: 22, rotate: 0, transformPerspective: 900 },
+    shown: {
+      opacity: 1,
+      rotateX: 0,
+      y: 0,
+      rotate: rest,
+      transformPerspective: 900,
+      transition: { duration: 0.72, ease: SETTLE },
+    },
+  };
+}
+
+/**
+ * A phase of the hearing entering or leaving the room.
+ *
+ * Home, investigation and verdict are not routes, they are the same page
+ * changing what it is for. Each phase's section rises in and, when it goes,
+ * lifts away a little faster than it arrived, so the thing replacing it never
+ * waits on the thing it replaces.
+ */
+export function phase(reduced: boolean | null): Variants {
+  if (reduced) {
+    return {
+      hidden: { opacity: 0 },
+      shown: { opacity: 1, transition: INSTANT },
+      exit: { opacity: 0, transition: INSTANT },
+    };
+  }
+  return {
+    hidden: { opacity: 0, y: 26 },
+    shown: { opacity: 1, y: 0, transition: { duration: 0.55, ease: SETTLE } },
+    exit: { opacity: 0, y: -14, transition: { duration: 0.28, ease: 'easeIn' } },
+  };
+}
+
+/**
+ * The introduction folding away when the case opens. Height collapses so the
+ * input rises to meet the header rather than leaving a hole behind.
+ */
+export function fold(reduced: boolean | null): Variants {
+  if (reduced) {
+    return {
+      shown: { opacity: 1, height: 'auto', transition: INSTANT },
+      exit: { opacity: 0, height: 0, transition: INSTANT },
+    };
+  }
+  return {
+    shown: { opacity: 1, height: 'auto', transition: { duration: 0.45, ease: SETTLE } },
+    exit: { opacity: 0, height: 0, transition: { duration: 0.36, ease: SETTLE } },
+  };
+}
+
 /** A line of the case file sliding in from the margin. */
 export function feedLine(reduced: boolean | null): Variants {
   if (reduced) {

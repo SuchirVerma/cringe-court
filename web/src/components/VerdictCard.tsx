@@ -3,6 +3,7 @@ import { motion, useReducedMotion, type MotionValue } from 'framer-motion';
 import type { Verdict } from '../lib/types';
 import { clause, unroll } from '../animations/framerVariants';
 import { useOrderScroll } from '../animations/scrollTriggers';
+import { Stamp } from './Stamp';
 
 /**
  * The order of the court.
@@ -101,7 +102,18 @@ export function VerdictCard({ verdict }: { verdict: Verdict }) {
           {verdict.headline}
         </h2>
 
-        <div className="text-right">
+        <div className="flex flex-col items-end gap-3 text-right">
+          {/*
+            The ruling itself, stamped. It is the largest mark on the page and
+            it lands last, after the paper has finished unrolling, because a
+            stamp goes onto a finished document and not a moving one.
+          */}
+          <Stamp
+            size="lg"
+            outcome={verdict.guilty ? 'violation' : verdict.ruled ? 'clear' : 'inconclusive'}
+            label={verdict.guilty ? 'GUILTY' : verdict.ruled ? 'NOT GUILTY' : 'ADJOURNED'}
+            delay={reduced ? 0 : 0.95}
+          />
           <motion.p
             initial={reduced ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.6 }}
             animate={{ opacity: 1, scale: 1 }}

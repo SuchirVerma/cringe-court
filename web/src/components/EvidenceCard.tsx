@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import type { Finding } from '../lib/types';
 import { Stamp } from './Stamp';
-import { exhibitDrop } from '../animations/framerVariants';
+import { exhibitDrop, exhibitFlip } from '../animations/framerVariants';
 
 /**
  * One exhibit, laid onto the desk.
@@ -27,7 +27,9 @@ export function EvidenceCard({ finding, index }: { finding: Finding; index: numb
 
   return (
     <motion.article
-      variants={exhibitDrop(reduced, index)}
+      // A charge is turned face-up on the desk; a cleared or unproven strip is
+      // simply laid down. The flip is reserved for the finding that earns it.
+      variants={isViolation ? exhibitFlip(reduced, index) : exhibitDrop(reduced, index)}
       initial="hidden"
       animate="shown"
       className={

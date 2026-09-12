@@ -19,9 +19,26 @@ const FACE: Record<Outcome, { label: string; tone: string; ring: string }> = {
   inconclusive: { label: 'UNPROVEN', tone: 'var(--color-unknown)', ring: 'rgba(155, 140, 106, 0.3)' },
 };
 
-export function Stamp({ outcome, delay = 0 }: { outcome: Outcome; delay?: number }) {
+/**
+ * `label` overrides the face's word: the order needs "NOT GUILTY" on a cleared
+ * face and "ADJOURNED" on an unproven one, where an exhibit says "CLEARED" and
+ * "UNPROVEN". `size` is the only other variation: the order's stamp is the
+ * largest mark on the page, an exhibit's is a small one in the corner.
+ */
+export function Stamp({
+  outcome,
+  delay = 0,
+  size = 'sm',
+  label,
+}: {
+  outcome: Outcome;
+  delay?: number;
+  size?: 'sm' | 'lg';
+  label?: string;
+}) {
   const reduced = useReducedMotion();
   const face = FACE[outcome];
+  const large = size === 'lg';
 
   return (
     <div className="pointer-events-none relative select-none" aria-hidden="true">
@@ -37,12 +54,16 @@ export function Stamp({ outcome, delay = 0 }: { outcome: Outcome; delay?: number
       )}
 
       <motion.div
-        className="relative grid place-items-center rounded-sm border-[3px] px-3 py-1"
+        className={
+          large
+            ? 'relative grid place-items-center rounded-[4px] border-[4px] px-5 py-2'
+            : 'relative grid place-items-center rounded-sm border-[3px] px-3 py-1'
+        }
         style={{
           borderColor: face.tone,
           color: face.tone,
           fontFamily: 'var(--font-body)',
-          letterSpacing: '0.18em',
+          letterSpacing: large ? '0.22em' : '0.18em',
           // A stamp is never perfectly opaque; the ink is uneven.
           opacity: 0.92,
         }}
@@ -54,7 +75,9 @@ export function Stamp({ outcome, delay = 0 }: { outcome: Outcome; delay?: number
             : { delay, duration: 0.42, ease: [0.34, 1.56, 0.64, 1] }
         }
       >
-        <span className="text-[0.68rem] font-semibold">{face.label}</span>
+        <span className={large ? 'text-[1.05rem] font-bold sm:text-[1.25rem]' : 'text-[0.68rem] font-semibold'}>
+          {label ?? face.label}
+        </span>
       </motion.div>
     </div>
   );
