@@ -53,5 +53,14 @@ t('clean site scores 10', innocent.score === 10 && innocent.guilty === false);
 t('score never below 1', buildVerdict({url:'https://x.com',host:'x',tier:2,site:null,startedAt:new Date().toISOString(),
   findings:['FALSE_URGENCY','SUBSCRIPTION_TRAP','BASKET_SNEAKING'].map(c=>violation(c,{tier:2,proof:'p',detail:{}}))}).score >= 1);
 
+console.log('Scoring honesty');
+const mostlyUnknown = buildVerdict({ url:'https://x.com', host:'x.com', tier:2, site:null, startedAt:new Date().toISOString(),
+  findings: [clear('FALSE_URGENCY',{tier:2,proof:'p'}), inconclusive('SUBSCRIPTION_TRAP',{tier:2,reason:'r'}), inconclusive('BASKET_SNEAKING',{tier:2,reason:'r'})] });
+t('declines to score when most charges undetermined', mostlyUnknown.ruled === false && mostlyUnknown.score === null);
+t('says how many were examined', mostlyUnknown.headline.includes('1 of 3'));
+const oneViolationMostlyUnknown = buildVerdict({ url:'https://x.com', host:'x.com', tier:2, site:null, startedAt:new Date().toISOString(),
+  findings: [v, inconclusive('SUBSCRIPTION_TRAP',{tier:2,reason:'r'}), inconclusive('BASKET_SNEAKING',{tier:2,reason:'r'})] });
+t('still rules when a violation was proven', oneViolationMostlyUnknown.ruled === true && oneViolationMostlyUnknown.score === 7);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

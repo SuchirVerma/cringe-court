@@ -17,16 +17,29 @@ export function buildVerdict({ url, host, tier, site, findings, startedAt }) {
   const inconclusive = findings.filter((f) => f.outcome === OUTCOME.INCONCLUSIVE);
 
   const penalty = violations.reduce((sum, v) => sum + (DEDUCTION[v.confidence] ?? 2), 0);
-  const score = Math.max(1, 10 - penalty);
   const guilty = violations.length > 0;
 
+  /*
+    An inconclusive charge never counts against a site: we do not punish a page
+    for defeating us. But a score still has to mean something. Handing out 10/10
+    when two of three charges were never determined reads as an endorsement of a
+    site we barely inspected, so below a majority of determined charges the court
+    declines to score at all and says why. Any upheld charge is always reported,
+    however little else could be checked.
+  */
+  const determined = findings.length - inconclusive.length;
+  const ruled = guilty || determined > findings.length / 2;
+  const score = ruled ? Math.max(1, 10 - penalty) : null;
+
   return {
+    ruled,
+    determined,
     url,
     host,
     tier,
     siteName: site?.display ?? null,
     guilty,
-    headline: headlineFor(guilty, violations.length, inconclusive.length),
+    headline: headlineFor(guilty, violations.length, inconclusive.length, ruled, determined, findings.length),
     score,
     outOf: 10,
     counts: {
@@ -54,7 +67,10 @@ export function buildVerdict({ url, host, tier, site, findings, startedAt }) {
   };
 }
 
-function headlineFor(guilty, violationCount, inconclusiveCount) {
+function headlineFor(guilty, violationCount, inconclusiveCount, ruled, determined, total) {
+  if (!ruled) {
+    return `Case adjourned. Only ${determined} of ${total} charges could be examined on this page.`;
+  }
   if (!guilty && inconclusiveCount === 0) {
     return 'Not guilty. The court found nothing to charge, and it did look.';
   }

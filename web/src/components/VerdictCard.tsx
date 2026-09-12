@@ -46,15 +46,21 @@ export function VerdictCard({ verdict }: { verdict: Verdict }) {
             animate={{ opacity: 1, scale: 1 }}
             transition={reduced ? { duration: 0.001 } : { delay: 0.25, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
             className="text-[3.2rem] leading-none"
-            style={{ fontFamily: 'var(--font-display)', color: tone }}
+            style={{ fontFamily: 'var(--font-display)', color: verdict.score === null ? 'var(--color-paper-meta)' : tone }}
           >
-            {verdict.score}
-            <span className="text-[1.4rem]" style={{ color: 'var(--color-paper-meta)' }}>
-              /{verdict.outOf}
-            </span>
+            {verdict.score === null ? (
+              '—'
+            ) : (
+              <>
+                {verdict.score}
+                <span className="text-[1.4rem]" style={{ color: 'var(--color-paper-meta)' }}>
+                  /{verdict.outOf}
+                </span>
+              </>
+            )}
           </motion.p>
           <p className="font-mono text-[0.6rem] uppercase tracking-[0.18em]" style={{ color: 'var(--color-paper-meta)' }}>
-            consumer respect
+            {verdict.score === null ? 'not scored' : 'consumer respect'}
           </p>
         </div>
       </div>

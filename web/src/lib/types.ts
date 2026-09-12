@@ -25,8 +25,10 @@ export interface Verdict {
   tier: 1 | 2;
   siteName: string | null;
   guilty: boolean;
+  ruled: boolean;
+  determined: number;
   headline: string;
-  score: number;
+  score: number | null;
   outOf: number;
   counts: { charges: number; violations: number; cleared: number; inconclusive: number };
   remedies: { charge: string; exhibit: string; text: string }[];

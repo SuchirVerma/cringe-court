@@ -82,6 +82,8 @@ export const PREVIEW_VERDICT: Verdict = {
   guilty: true,
   headline: 'Guilty on two counts.',
   score: 4,
+  ruled: true,
+  determined: 2,
   outOf: 10,
   counts: { charges: 3, violations: 2, cleared: 0, inconclusive: 1 },
   remedies: PREVIEW_FINDINGS.filter((f) => f.outcome === 'violation').flatMap((f) =>
