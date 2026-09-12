@@ -54,6 +54,7 @@ Requires Node.js 20.6+.
 # once, globally
 npm install -g @agentrhq/webcmd
 webcmd skills add
+webcmd doctor        # first run downloads a ~140 MB browser engine; let it finish
 
 # install project dependencies
 cd server && npm install
@@ -65,6 +66,24 @@ cd web && npm run dev        # http://localhost:5173
 ```
 
 Open the web app, paste a URL, and press **Open the case**.
+
+If `webcmd` is not on your PATH after a global install, check where npm put it
+(`npm prefix -g`) and link it: `ln -sf "$(npm prefix -g)/bin/webcmd" ~/.local/bin/webcmd`.
+
+## Testing
+
+```bash
+cd server
+npm test          # logic: tier routing, the always-resolves guarantee, scoring
+npm run fixture   # serves test-site/ on :8080 (separate terminal)
+npm run test:live # runs all three detectors against the fixture
+```
+
+`test-site/` is a deliberately rigged checkout page with known answers. It carries
+a timer that never moves *beside one that honestly counts down*, a pre-ticked
+₹149 charge *beside a terms box that must not be charged*, and a cancel flow
+buried four links deep. The live test asserts both the violations and the two
+false-positive traps, plus that the cancellation page is never actually opened.
 
 ## Layout
 
