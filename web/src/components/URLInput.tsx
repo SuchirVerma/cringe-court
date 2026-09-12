@@ -30,7 +30,7 @@ export function URLInput({
   onChange: (value: string) => void;
   onSubmit: (event: FormEvent) => void;
   onStop: () => void;
-  /** Opens the bundled rigged checkout as a real case. Home phase only. */
+  /** Opens the bundled rigged checkout as a real case. Any phase, while idle. */
   onDemo: () => void;
   running: boolean;
   /** True once a case is open: quieter, no suggestions. */
@@ -82,10 +82,11 @@ export function URLInput({
           sample data: a live browser opens the fixture and finds all three
           charges the honest way, in around twenty seconds. It exists because
           real storefronts, signed out, mostly report what they could not
-          determine, which is true and a poor first look. It leaves with the
-          suggestions once a case is open.
+          determine, which is true and a poor first look. It stays beside
+          Investigate on every phase while no case is running, so a presenter
+          who has just shown a live site can go straight to the full hearing.
         */}
-        {!compact && !running && (
+        {!running && (
           <motion.button
             type="button"
             onClick={onDemo}
