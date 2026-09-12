@@ -22,6 +22,7 @@ export function URLInput({
   onChange,
   onSubmit,
   onStop,
+  onDemo,
   running,
   compact,
 }: {
@@ -29,6 +30,8 @@ export function URLInput({
   onChange: (value: string) => void;
   onSubmit: (event: FormEvent) => void;
   onStop: () => void;
+  /** Opens the bundled rigged checkout as a real case. Home phase only. */
+  onDemo: () => void;
   running: boolean;
   /** True once a case is open: quieter, no suggestions. */
   compact: boolean;
@@ -73,6 +76,30 @@ export function URLInput({
             {running ? 'In session' : 'Investigate'}
           </span>
         </motion.button>
+
+        {/*
+          Demo Mode is a real investigation of the bundled rigged checkout, not
+          sample data: a live browser opens the fixture and finds all three
+          charges the honest way, in around twenty seconds. It exists because
+          real storefronts, signed out, mostly report what they could not
+          determine, which is true and a poor first look. It leaves with the
+          suggestions once a case is open.
+        */}
+        {!compact && !running && (
+          <motion.button
+            type="button"
+            onClick={onDemo}
+            className="inline-flex items-center justify-center gap-2 rounded-[3px] border px-4 py-3 text-[0.85rem] transition-colors hover:border-[var(--color-seal)]"
+            style={{ borderColor: 'var(--color-panel-edge)', color: 'var(--color-ink-300)' }}
+            whileHover={reduced ? undefined : { scale: 1.02 }}
+            whileTap={reduced ? undefined : { scale: 0.98 }}
+            transition={{ duration: 0.18 }}
+            title="Investigate the bundled rigged checkout: a real run that finds all three charges"
+          >
+            <span aria-hidden="true">🎬</span>
+            <span className="font-mono text-[0.72rem] uppercase tracking-[0.2em]">Demo Mode</span>
+          </motion.button>
+        )}
 
         {running && (
           <motion.button

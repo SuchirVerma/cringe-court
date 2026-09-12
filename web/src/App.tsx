@@ -16,6 +16,9 @@ import { VerdictPage } from './pages/Verdict';
  */
 const PREVIEW = import.meta.env.DEV && new URLSearchParams(location.search).has('preview');
 
+/** The rigged checkout served by `npm run fixture` in the server folder. */
+const FIXTURE_URL = 'http://localhost:8080/index.html';
+
 /**
  * The hearing has three phases and they are not routes.
  *
@@ -89,12 +92,26 @@ export default function App() {
     lastViolations.current = violationCount;
   }, [violationCount, reduced]);
 
-  const onSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    const target = url.trim();
+  const startCase = (target: string) => {
     if (!target || running) return;
     start(target);
     if (!reduced) setOpening(target);
+  };
+
+  const onSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    startCase(url.trim());
+  };
+
+  /*
+    Demo Mode: the bundled rigged checkout, tried as a real case. Same browser,
+    same detectors, same gavel; only the defendant is one we control, so all
+    three charges are found and the court returns guilty. The address is put in
+    the field so the audience can see exactly what was investigated.
+  */
+  const onDemo = () => {
+    setUrl(FIXTURE_URL);
+    startCase(FIXTURE_URL);
   };
 
   return (
@@ -181,6 +198,7 @@ export default function App() {
             onChange={setUrl}
             onSubmit={onSubmit}
             onStop={stop}
+            onDemo={onDemo}
             running={running}
             compact={open}
           />
