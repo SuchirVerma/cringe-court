@@ -9,6 +9,7 @@
 import { violation, clear, inconclusive } from '../evidence.js';
 import { runProgram } from '../webcmd.js';
 import { hostOf } from '../sites.js';
+import { classifyFailure, wallReason } from '../recovery.js';
 
 const CHARGE = 'BASKET_SNEAKING';
 
@@ -48,10 +49,26 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
   let reached = null;
   const attempts = [];
 
-  for (const target of targets.slice(0, 5)) {
+  let retryAnnounced = false;
+  const tried = targets.slice(0, 5);
+
+  for (const target of tried) {
     const run = await runProgram(sessionId, 'scan-checkboxes', { navigateTo: target });
-    attempts.push({ target, ok: run.ok, reason: run.reason });
-    if (!run.ok) continue;
+    const kind = run.ok ? null : classifyFailure(run.reason);
+    attempts.push({ target, ok: run.ok, reason: run.reason, kind });
+    if (!run.ok) {
+      /*
+        The first miss is announced as a retry, so the feed shows the search
+        turning to its alternate rather than going quiet. Later misses fold
+        into the summary below.
+      */
+      const i = tried.indexOf(target);
+      if (!retryAnnounced && i < tried.length - 1) {
+        retryAnnounced = true;
+        log(`Exhibit C. Retry: alternate cart address ${tried[i + 1].replace(/^https?:\/\/[^/]+/, '')} (${kind === 'timeout' ? 'the first timed out' : 'the first could not be read'}).`, 'warn');
+      }
+      continue;
+    }
 
     /*
       Do not trust the shape. A page program can come back wrapped, truncated,
@@ -65,6 +82,18 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
     if (!shaped) {
       attempts.push({ target, ok: false, reason: 'the page did not return a readable cart structure' });
       continue;
+    }
+
+    // A bot check is not a cart. Say so, in those words, and stop.
+    if (run.data.botCheck) {
+      attempts.push({ target, ok: false, kind: 'bot-protection' });
+      log('Exhibit C. Bot protection stood in the way. Cannot examine a checkout behind a verification page.', 'warn');
+      return inconclusive(CHARGE, {
+        tier,
+        reason: wallReason('bot-protection', 'the cart'),
+        proof: `Reached ${target} and was shown a verification page instead of the site.`,
+        detail: { surface: target, attempts, wall: 'bot-protection' },
+      });
     }
 
     // A page with no checkboxes at all is probably not the cart. Keep looking,
@@ -97,10 +126,14 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
 
   if (!result) {
     const why = attempts.find((a) => !a.ok && a.reason)?.reason;
+    // Name the wall when every attempt hit the same one.
+    const wall = attempts.some((a) => a.kind === 'timeout') ? 'timeout' : null;
     return inconclusive(CHARGE, {
       tier,
-      reason: `Could not open a readable cart or checkout page on ${hostOf(url)}${why ? `: ${why}` : '.'}`,
-      detail: { attempts, triedCount: attempts.length },
+      reason: wall
+        ? wallReason(wall, 'the cart or checkout page', `Tried ${attempts.length} address${attempts.length === 1 ? '' : 'es'} on ${hostOf(url)}.`)
+        : `Could not open a readable cart or checkout page on ${hostOf(url)}${why ? `: ${why}` : '.'}`,
+      detail: { attempts, triedCount: attempts.length, wall },
     });
   }
 

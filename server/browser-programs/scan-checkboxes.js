@@ -15,7 +15,22 @@ if (INPUT.navigateTo) {
   await page.waitForTimeout(2000);
 }
 
-return await page.evaluate(() => {
+/*
+  A bot check is not a cart. Read the wall first, so a captcha page is reported
+  as a captcha page rather than as a basket with no checkboxes in it.
+*/
+let botCheck = false;
+try {
+  botCheck = await page.evaluate(() =>
+    /captcha|not a robot|verify (that )?you are (a )?human|access denied|unusual traffic|automated access/i.test(
+      (document.body?.innerText || '').slice(0, 4000),
+    ),
+  );
+} catch {
+  botCheck = false;
+}
+
+const scan = await page.evaluate(() => {
   // Rupees first (this court sits in India), then the common others.
   const PRICE_PATTERN = /(₹|rs\.?\s|inr\s|\$|€|£)\s*\d[\d,]*(\.\d{1,2})?/i;
   const CHARGE_WORDS =
@@ -233,3 +248,5 @@ return await page.evaluate(() => {
     cartAffordances,
   };
 });
+
+return { ...scan, botCheck };

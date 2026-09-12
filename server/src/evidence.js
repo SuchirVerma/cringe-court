@@ -99,7 +99,7 @@ export async function resolveAlways(chargeId, tier, fn, { timeout = 60_000 } = {
         resolve(
           inconclusive(chargeId, {
             tier,
-            reason: `This check ran past ${Math.round(timeout / 1000)} seconds and was stopped`,
+            reason: `Timeout: this check ran past ${Math.round(timeout / 1000)} seconds and was stopped before it could finish`,
           }),
         ),
       timeout,

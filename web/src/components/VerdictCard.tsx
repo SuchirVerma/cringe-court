@@ -61,7 +61,7 @@ export function VerdictCard({ verdict }: { verdict: Verdict }) {
         card needs clipping: the seal and the margin rule are both laid out
         inside the padding box.
       */
-      className="paper relative rounded-[3px] py-6 pl-7 pr-6"
+      className="paper order-paper relative rounded-[3px] py-6 pl-7 pr-6"
       aria-label="Order of the court"
     >
       <div className="absolute inset-x-0 top-0 h-[3px]" style={{ background: tone }} aria-hidden="true" />
@@ -95,9 +95,15 @@ export function VerdictCard({ verdict }: { verdict: Verdict }) {
       </motion.header>
 
       <motion.div variants={clause(reduced)} className="mt-3 flex flex-wrap items-end justify-between gap-5">
+        {/*
+          Cinzel, uppercase, bold: the one place on the page set like an
+          engraved title, because this is the one line that is a ruling.
+          Sized down from the old serif headline, since capitals run wider and
+          a two-sentence adjournment has to fit beside the stamp.
+        */}
         <h2
-          className="max-w-[26ch] text-[1.9rem] leading-[1.08]"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-paper-ink)' }}
+          className="max-w-[26ch] text-[1.3rem] font-bold uppercase leading-[1.18] tracking-[0.04em] sm:text-[1.55rem]"
+          style={{ fontFamily: "'Cinzel', var(--font-display)", color: 'var(--color-paper-ink)' }}
         >
           {verdict.headline}
         </h2>

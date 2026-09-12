@@ -13,6 +13,7 @@
 
 import { violation, clear, inconclusive } from '../evidence.js';
 import { runProgram } from '../webcmd.js';
+import { classifyFailure, wallReason } from '../recovery.js';
 
 const CHARGE = 'SUBSCRIPTION_TRAP';
 const ACCEPTABLE_STEPS = 3;
@@ -68,11 +69,24 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
   */
   const attempts = [];
 
+  let retryAnnounced = false;
+
   for (const target of targets.slice(0, 8)) {
     const run = await runProgram(sessionId, 'scan-cancel-flow', { navigateTo: target, maxDepth: 4 });
     if (!run.ok) {
       lastReason = run.reason;
-      attempts.push({ target, outcome: 'unreadable', reason: run.reason });
+      const kind = classifyFailure(run.reason);
+      attempts.push({ target, outcome: kind, reason: run.reason });
+      /*
+        The first miss is announced as a retry, so the feed shows the search
+        turning to its alternate rather than going quiet. Later misses fold into
+        the summary below; eight lines of "not there" would bury the finding.
+      */
+      if (!retryAnnounced && targets.indexOf(target) < targets.length - 1) {
+        retryAnnounced = true;
+        const next = targets[targets.indexOf(target) + 1];
+        log(`Exhibit B. Retry: alternate account address ${next.replace(/^https?:\/\/[^/]+/, '')} (${kind === 'timeout' ? 'the first timed out' : 'the first could not be read'}).`, 'warn');
+      }
       continue;
     }
 
@@ -93,6 +107,19 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
       lastReason = `${target} returned ${data.httpStatus}`;
       attempts.push({ target, outcome: 'not-found', status: data.httpStatus });
       continue;
+    }
+
+    // A bot check is not a subscription page, and this tool does not try to
+    // get past one. Say so, in those words, and stop.
+    if (data.botCheck) {
+      attempts.push({ target, outcome: 'bot-protection' });
+      log('Exhibit B. Bot protection stood in the way. Cannot judge a cancellation flow behind a verification page.', 'warn');
+      return inconclusive(CHARGE, {
+        tier,
+        reason: wallReason('bot-protection', 'the subscription area'),
+        proof: `Reached ${target} and was shown a verification page instead of the site.`,
+        detail: { attempts, triedCount: attempts.length, wall: 'bot-protection' },
+      });
     }
     anyPageReached = true;
     if (data.loginWall) {
@@ -120,7 +147,7 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
   }
 
   // The search, said once, so the feed shows the work without drowning in it.
-  const missed = attempts.filter((a) => a.outcome === 'not-found' || a.outcome === 'unreadable').length;
+  const missed = attempts.filter((a) => ['not-found', 'unreadable', 'timeout'].includes(a.outcome)).length;
   if (missed > 0) {
     log(
       `Exhibit B. Tried ${attempts.length} account address${attempts.length === 1 ? '' : 'es'}; ` +
@@ -129,12 +156,22 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
   }
 
   if (!best) {
+    // Name the wall. A timeout and a 404 are different failures and a reader
+    // deciding whether to try again deserves to know which they hit.
+    const kinds = attempts.map((a) => a.outcome);
+    const wall = kinds.includes('timeout')
+      ? 'timeout'
+      : kinds.every((k) => k === 'not-found')
+        ? 'not-found'
+        : null;
     return inconclusive(CHARGE, {
       tier,
-      reason: anyPageReached
-        ? `Reached the account area but could not analyse it. ${lastReason || ''}`.trim()
-        : `No account or subscription page could be found on this site. ${lastReason || ''}`.trim(),
-      detail: { attempts, triedCount: attempts.length },
+      reason: wall
+        ? wallReason(wall, 'the account or subscription area', `Tried ${attempts.length} address${attempts.length === 1 ? '' : 'es'}.`)
+        : anyPageReached
+          ? `Reached the account area but could not analyse it. ${lastReason || ''}`.trim()
+          : `No account or subscription page could be found on this site. ${lastReason || ''}`.trim(),
+      detail: { attempts, triedCount: attempts.length, wall },
     });
   }
 

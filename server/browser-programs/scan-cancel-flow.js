@@ -128,6 +128,21 @@ const trail = [];
 let depth = 0;
 let found = null;
 let loginWall = false;
+/*
+  A bot check is not a subscription page. When the body reads as a verification
+  wall the run stops here and says so, rather than walking a captcha looking
+  for a cancel button and reporting the captcha has none.
+*/
+let botCheck = false;
+try {
+  botCheck = await page.evaluate(() =>
+    /captcha|not a robot|verify (that )?you are (a )?human|access denied|unusual traffic|automated access/i.test(
+      (document.body?.innerText || '').slice(0, 4000),
+    ),
+  );
+} catch {
+  botCheck = false;
+}
 let provenInsideAccount = false;
 
 while (depth <= MAX_DEPTH) {
@@ -180,6 +195,7 @@ return {
   found,
   loginWall,
   provenInsideAccount,
+  botCheck,
   exhausted: !found && !loginWall,
   trail,
 };

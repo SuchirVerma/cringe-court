@@ -5,6 +5,7 @@ import { normaliseUrl } from '../src/investigate.js';
 import { pairReadings, scanWithRetry } from '../src/detectors/fake-urgency.js';
 import { quipFor } from '../src/quips.js';
 import { labelFrom } from '../src/detectors/basket-sneaking.js';
+import { classifyFailure, wallReason } from '../src/recovery.js';
 
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) { pass++; console.log('  ok  ' + name); } else { fail++; console.log('  FAIL ' + name); } };
@@ -200,6 +201,19 @@ t('keeps a plain name untouched', labelFrom('Travel Insurance') === 'Travel Insu
 t('returns null on nothing', labelFrom('') === null && labelFrom(null) === null);
 t('a price alone is not a name', labelFrom('₹149') === null && labelFrom('Rs 99') === null && labelFrom('$20') === null);
 t('never runs away with a paragraph', (labelFrom('A'.repeat(200)) || '').length <= 60);
+
+console.log('Naming the wall');
+t('a webcmd timeout is a timeout', classifyFailure('Page analysis timed out after 40 seconds') === 'timeout');
+t('a browser-run overrun is a timeout', classifyFailure('BROWSER_RUN_TIMEOUT: Browser-run execution exceeded 30000ms.') === 'timeout');
+t('a captcha reason is bot protection', classifyFailure('Access denied: please verify you are human') === 'bot-protection');
+t('a botCheck flag wins over the reason', classifyFailure('anything', { botCheck: true }) === 'bot-protection');
+t('a notFound flag is not-found', classifyFailure('', { notFound: true }) === 'not-found');
+t('anything else is unreadable', classifyFailure('weird shape') === 'unreadable');
+t('the bot wall names itself first', wallReason('bot-protection', 'the cart').startsWith('Bot protection:'));
+t('the timeout wall names itself first', wallReason('timeout', 'the cart').startsWith('Timeout:'));
+t('the wall reason names what was sought', wallReason('timeout', 'the subscription area').includes('the subscription area'));
+t('the wall reason carries its detail', wallReason('not-found', 'the cart', 'Tried 5 addresses.').endsWith('Tried 5 addresses.'));
+t('the overrun reason says timeout', (await resolveAlways('FALSE_URGENCY', 2, () => new Promise(r => setTimeout(r, 5000)), { timeout: 120 })).reason.startsWith('Timeout:'));
 
 console.log('Quips land on the evidence');
 {
