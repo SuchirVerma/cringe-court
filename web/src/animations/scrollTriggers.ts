@@ -27,9 +27,17 @@ export interface OrderScroll {
 export function useOrderScroll(ref: RefObject<HTMLElement | null>): OrderScroll {
   const reduced = useReducedMotion();
 
+  /*
+    The order is the last thing on the page, so it never scrolls up and out:
+    "end start" (its bottom leaving the top of the screen) is a position the
+    document cannot reach, and a rule mapped to it would stall short of full.
+    So progress runs from "its top enters the bottom of the screen" to "its
+    bottom reaches the bottom of the screen", which is exactly the stretch over
+    which the order is actually read, and which the page can always reach.
+  */
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset: ['start end', 'end start'],
+    offset: ['start end', 'end end'],
   });
 
   // Smoothed, so a trackpad's jitter does not show up in the rule.
@@ -40,11 +48,11 @@ export function useOrderScroll(ref: RefObject<HTMLElement | null>): OrderScroll 
   });
 
   /*
-    The rule fills across the stretch where the document is actually being
-    read (roughly the middle of its pass through the viewport), not across the
-    whole entry-to-exit range, or it would be full before the reader arrives.
+    It starts filling once the order is properly on screen rather than the
+    instant its first pixel appears, and is full by the time the reader reaches
+    the foot of it.
   */
-  const ruleScale = useTransform(progress, [0.08, 0.62], [0, 1], { clamp: true });
+  const ruleScale = useTransform(progress, [0.12, 0.92], [0, 1], { clamp: true });
   const sealDrift = useTransform(progress, [0, 1], [10, -10]);
 
   // Hooks above run unconditionally; reduced motion gets finished values.

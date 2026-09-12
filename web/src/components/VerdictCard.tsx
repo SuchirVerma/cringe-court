@@ -53,7 +53,14 @@ export function VerdictCard({ verdict }: { verdict: Verdict }) {
       animate="shown"
       // Unrolled from the top edge, the way paper comes off a roll.
       style={{ transformOrigin: 'top center' }}
-      className="paper relative overflow-hidden rounded-[3px] py-6 pl-7 pr-6"
+      /*
+        No overflow-hidden here, deliberately. An overflow container becomes the
+        scroll box for any `position: sticky` inside it, and since this card
+        never scrolls, the masthead would simply never stick. Nothing in the
+        card needs clipping: the seal and the margin rule are both laid out
+        inside the padding box.
+      */
+      className="paper relative rounded-[3px] py-6 pl-7 pr-6"
       aria-label="Order of the court"
     >
       <div className="absolute inset-x-0 top-0 h-[3px]" style={{ background: tone }} aria-hidden="true" />

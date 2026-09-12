@@ -39,12 +39,47 @@ A check resolves to exactly one of three states, on every site, every time:
 Never a crash, never a silent hang. This is treated as a hard requirement equal to the
 detections themselves.
 
+The interface keeps the same promise. A render fault is caught at the section it
+happened in and reported in the court's own voice, so one malformed payload can never
+take the whole page down and lose the investigation behind it.
+
+## The hearing, as staged
+
+The trial is a sequence, and each beat is a real moment in the investigation rather than
+a loading screen with decoration on it:
+
+| Beat | What happens |
+|---|---|
+| **The gavel** | The court comes to order: the gavel falls, the room shakes once, and the evidence tracker names the three charges about to be heard. It plays *over* an investigation that has already started, and lasts a fixed 1.5s, so it can never be the reason a demo waits. |
+| **The case file** | Each line of the agent's reasoning types itself onto the record. Only the newest line types; the ones above it are already on the record. |
+| **The charge landing** | A violation reddens the room once, then lets go. |
+| **The exhibits** | Each one drops onto the desk and the stamp lands on it, slightly off-square, the way paper actually falls. |
+| **The order** | It unrolls from its top edge, its masthead stays with you as the clauses pass under it, and the rule down its margin fills as you read. |
+
+Every one of them is transform and opacity only, and every one has a finished state with
+no travel under `prefers-reduced-motion`. Reduced motion is honoured live and in both
+directions: no gavel, no shake, no dust, no typing, everything already settled.
+
+The order's reveal is deliberately tied to the verdict arriving, not to scroll position.
+A scroll-driven reveal can leave a visitor looking at a half-drawn document if they never
+scroll, which on a live demo reads as a broken page. Scroll only draws the margin rule,
+which is decoration and safe to leave unfinished.
+
 ## Tech stack
 
 - **Browser automation:** [webcmd](https://github.com/agentrhq/webcmd) (`@agentrhq/webcmd`)
   with Playwright underneath, driving sandboxed page programs against named sessions.
 - **Backend:** Node + Express, streaming the investigation over Server-Sent Events.
 - **Frontend:** React + Vite + TypeScript + Tailwind, animated with Framer Motion.
+  The reusable motion vocabulary lives in `web/src/animations/`: `framerVariants.ts`
+  holds the two easing curves and every entrance built on them, `scrollTriggers.ts`
+  holds the scroll-driven reading of the order.
+
+The court's seal and the gavel are drawn as inline SVG rather than generated images:
+they stay crisp at any size, take the verdict's own colour, and add nothing to the
+page weight.
+
+Folder names map to the brief as `web/` = frontend, `server/` = backend.
 
 ## Running it locally
 
