@@ -47,6 +47,20 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
     attempts.push({ target, ok: run.ok, reason: run.reason });
     if (!run.ok) continue;
 
+    /*
+      Do not trust the shape. A page program can come back wrapped, truncated,
+      or as an error object the CLI framed as success, and reaching into it
+      blindly throws a raw TypeError that surfaces to the user as the reason a
+      charge could not be determined. Treat anything unrecognisable as a failed
+      read of that page and move on.
+    */
+    const shaped =
+      run.data && typeof run.data === 'object' && Array.isArray(run.data.preTicked);
+    if (!shaped) {
+      attempts.push({ target, ok: false, reason: 'the page did not return a readable cart structure' });
+      continue;
+    }
+
     // A page with no checkboxes at all is probably not the cart. Keep looking,
     // but remember it so we can still report honestly if nothing better turns up.
     if (!result) {
@@ -62,9 +76,10 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
   }
 
   if (!result) {
+    const why = attempts.find((a) => !a.ok && a.reason)?.reason;
     return inconclusive(CHARGE, {
       tier,
-      reason: `Could not open a cart or checkout page on ${hostOf(url)}. ${attempts[0]?.reason || ''}`.trim(),
+      reason: `Could not open a readable cart or checkout page on ${hostOf(url)}${why ? `: ${why}` : '.'}`,
     });
   }
 

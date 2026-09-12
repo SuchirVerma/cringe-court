@@ -51,6 +51,14 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
 
     const data = run.data;
 
+    // Same rule as the other detectors: an unrecognisable shape is a failed
+    // read, not something to reach into. Blind access throws a raw TypeError
+    // that ends up quoted at the user as the reason for an unproven charge.
+    if (!data || typeof data !== 'object' || !Array.isArray(data.trail)) {
+      lastReason = 'the page did not return a readable navigation structure';
+      continue;
+    }
+
     // The page was not there. Try the next candidate rather than concluding
     // anything from a 404.
     if (data.notFound) {
