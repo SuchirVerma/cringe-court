@@ -26,7 +26,13 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
     const u = new URL(url);
     const known = profile?.cartPaths || site.cartPaths || [];
     targets.push(...known.map((p) => `${u.protocol}//${u.host}${p}`));
-    log(`Exhibit C. Using the learned profile for ${site.display} to find the cart.`);
+    // Say which one it actually is. Claiming a learned profile we do not have
+    // undermines the one moment in the run where that distinction is the point.
+    log(
+      profile
+        ? `Exhibit C. Using the learned profile for ${site.display} to find the cart.`
+        : `Exhibit C. No learned profile yet, so using the seed map for ${site.display} to find the cart.`,
+    );
   } else {
     log('Exhibit C. Unfamiliar site, so looking for a cart the general way.');
   }
@@ -47,7 +53,8 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
       result = run.data;
       reached = target;
     }
-    if (run.data.checkboxesFound > 0 || run.data.cartLines.length > 0) {
+    // Prefer a page that is demonstrably a basket over one that merely loaded.
+    if (run.data.looksLikeCart || run.data.preTicked.length > 0) {
       result = run.data;
       reached = target;
       break;
@@ -65,11 +72,34 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
   const charged = preTicked.filter((p) => p.hasPrice || p.chargeWord);
 
   if (charged.length === 0) {
+    // Clearing a site is a claim too. Only make it if we actually saw a basket.
+    if (!result.looksLikeCart) {
+      log('Exhibit C. Could not reach a real cart page, so there is nothing to clear or charge.', 'warn');
+      return inconclusive(CHARGE, {
+        tier,
+        reason:
+          'Could not reach a cart or checkout page with items in it. Most carts need a signed-in session or a ' +
+          'product added first, so nothing here proves the checkout is clean.',
+        proof: `Loaded ${reached} but it did not present as a basket.`,
+      });
+    }
+
+    if (result.looksEmpty) {
+      log('Exhibit C. The cart is empty, so there are no add-ons to inspect.', 'warn');
+      return inconclusive(CHARGE, {
+        tier,
+        reason:
+          'The cart was empty, and add-ons are offered alongside items. Add a product and run this again to ' +
+          'examine the checkout properly.',
+        proof: `Reached ${reached} and found an empty basket.`,
+      });
+    }
+
     log('Exhibit C. Nothing pre-ticked that costs money.');
     return clear(CHARGE, {
       tier,
       proof:
-        `Examined ${reached}. Found ${result.checkboxesFound} checkbox${result.checkboxesFound === 1 ? '' : 'es'}` +
+        `Examined ${reached}, which presented as a basket. Found ${result.checkboxesFound} checkbox${result.checkboxesFound === 1 ? '' : 'es'}` +
         (preTicked.length
           ? `, ${preTicked.length} of them pre-ticked, none attached to a charge.`
           : ', none of them pre-ticked with a charge attached.'),

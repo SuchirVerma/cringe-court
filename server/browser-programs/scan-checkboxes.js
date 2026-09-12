@@ -141,11 +141,31 @@ return await page.evaluate(() => {
     if (lines.length) break;
   }
 
+  /*
+    Did we actually reach a basket?
+
+    "Nothing pre-ticked" is only a clearance if there was somewhere for a
+    pre-ticked box to be. Signed out, a cart URL serves a login page or an
+    empty shell, and reporting that as clean clears a company on evidence we
+    never saw. The caller needs to tell the two apart.
+  */
+  const pageText = (document.body.innerText || '').slice(0, 5000);
+  const looksLikeCart =
+    /\b(subtotal|order\s+summary|place\s+order|proceed\s+to\s+(pay|checkout|buy)|continue\s+to\s+payment|price\s+details|delivery\s+charges|total\s+amount|your\s+(cart|basket|bag))\b/i.test(
+      pageText,
+    ) || lines.length > 0;
+  const looksEmpty =
+    /\b((cart|basket|bag)\s+is\s+empty|no\s+items\s+in\s+your\s+(cart|basket|bag)|nothing\s+in\s+your\s+(cart|basket))\b/i.test(
+      pageText,
+    );
+
   return {
     url: location.href,
     title: document.title,
     checkboxesFound: boxes.length,
     preTicked,
     cartLines: lines.slice(0, 20),
+    looksLikeCart,
+    looksEmpty,
   };
 });

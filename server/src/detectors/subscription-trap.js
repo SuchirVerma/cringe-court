@@ -90,14 +90,35 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
   const { data, target } = best;
 
   if (!data.found) {
+    /*
+      The defendant's protection.
+
+      "No cancel control here" is only evidence of a trap if we can show we were
+      somewhere a cancel control belongs. Signed out, a subscription page shows
+      marketing, not controls, and charging on that would be accusing a real
+      company of a legal violation over a page we never actually saw. Without
+      proof we were inside the account, the honest answer is that we could not
+      tell.
+    */
+    if (!data.provenInsideAccount) {
+      log('Exhibit B. Could not get inside the account, so the cancellation flow cannot be judged.', 'warn');
+      return inconclusive(CHARGE, {
+        tier,
+        reason:
+          'Could not confirm we were inside a signed-in account, so the absence of a cancel control proves nothing. ' +
+          'Judging a cancellation flow needs an account this tool was not given.',
+        proof: `Visited ${data.trail.map((t) => t.title || t.url).join(' → ')} without reaching signed-in account pages.`,
+      });
+    }
+
     log('Exhibit B. Charge filed. No cancel control anywhere in the subscription area.');
     return violation(CHARGE, {
       tier,
       confidence: 'medium',
       detail: { steps: data.steps, labelFound: null, exhausted: true },
       proof:
-        `Started at ${target} and followed the subscription and billing links ${data.steps} level${data.steps === 1 ? '' : 's'} deep. ` +
-        `No cancel or unsubscribe control was reachable. ` +
+        `Started at ${target} and followed the subscription and billing links ${data.steps} level${data.steps === 1 ? '' : 's'} deep, ` +
+        `inside a signed-in account. No cancel or unsubscribe control was reachable. ` +
         `The pages visited were: ${data.trail.map((t) => t.title || t.url).join(' → ')}.`,
     });
   }

@@ -84,17 +84,42 @@ async function survey() {
       return out;
     };
 
+    const bodyText = (document.body.innerText || '').slice(0, 4000);
+
+    /*
+      Two questions, and the charge depends on both.
+
+      "Are we being asked to sign in?" must be generous: an Indian retailer's
+      login is often a bare phone field with no password input at all, so
+      requiring one misses the wall entirely.
+
+      "Are we actually inside the account?" is the one that protects the
+      defendant. A page with no cancel control is only evidence of a trap if we
+      can show we were somewhere a cancel control belongs. Without that, the
+      honest answer is that we could not tell.
+    */
+    const askedToSignIn =
+      /\b(sign\s?in|log\s?in|signin|login|enter\s+(your\s+)?(otp|password|mobile|phone)|continue\s+with\s+(google|phone|email)|verify\s+(your\s+)?(mobile|number))\b/i.test(
+        bodyText,
+      ) ||
+      /\/(login|signin|sign-in|auth|account\/login)/i.test(location.pathname) ||
+      !!document.querySelector('input[type="password"], input[name*="otp" i]');
+
+    const insideAccount =
+      /\b(log\s?out|sign\s?out|logout|signout|my\s+orders|your\s+orders|order\s+history|manage\s+your\s+account)\b/i.test(
+        bodyText,
+      ) || !!document.querySelector('a[href*="logout" i], a[href*="signout" i], button[id*="logout" i]');
+
     return {
       url: location.href,
       title: document.title,
       direct: dedupe(direct).slice(0, 10),
       vague: dedupe(vague).slice(0, 10),
       onward: dedupe(onward).slice(0, 12),
-      // A login wall makes the whole question unanswerable; say so rather than
-      // reporting "no cancel option found", which would be a false accusation.
-      looksLikeLogin:
-        /\b(sign\s?in|log\s?in|enter\s+(your\s+)?(otp|password|mobile))\b/i.test(document.body.innerText.slice(0, 3000)) &&
-        !!document.querySelector('input[type="password"], input[type="tel"], input[name*="otp" i]'),
+      askedToSignIn,
+      insideAccount,
+      // Only a wall if it wants credentials and we are demonstrably not in.
+      looksLikeLogin: askedToSignIn && !insideAccount,
     };
   });
 }
@@ -103,6 +128,7 @@ const trail = [];
 let depth = 0;
 let found = null;
 let loginWall = false;
+let provenInsideAccount = false;
 
 while (depth <= MAX_DEPTH) {
   let view;
@@ -118,7 +144,10 @@ while (depth <= MAX_DEPTH) {
     title: view.title,
     directLabels: view.direct.map((d) => d.text),
     vagueLabels: view.vague.map((v) => v.text),
+    insideAccount: view.insideAccount,
   });
+
+  if (view.insideAccount) provenInsideAccount = true;
 
   if (view.looksLikeLogin) {
     loginWall = true;
@@ -150,6 +179,7 @@ return {
   steps: found ? found.depth + 1 : depth + 1,
   found,
   loginWall,
+  provenInsideAccount,
   exhausted: !found && !loginWall,
   trail,
 };
