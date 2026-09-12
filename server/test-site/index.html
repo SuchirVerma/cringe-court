@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bargain Bazaar — Checkout</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 2rem; background: #fafafa; color: #222; }
+      main { max-width: 640px; margin: 0 auto; }
+      .urgent { background: #ffe8e4; border: 1px solid #f3b5aa; padding: .6rem 1rem; border-radius: 6px; }
+      .honest { background: #e6f0e4; border: 1px solid #aacaa2; padding: .6rem 1rem; border-radius: 6px; }
+      .row { display: flex; gap: .6rem; align-items: flex-start; padding: .7rem 0; border-bottom: 1px solid #eee; }
+      .price { float: right; font-weight: 600; }
+      h1 { font-size: 1.4rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Bargain Bazaar — Checkout</h1>
+
+      <!--
+        Test fixture for CringeCourt's detectors. Every element here is a known
+        quantity, so a detector run against this page has an expected answer.
+
+        EXPECTED RESULTS
+          Exhibit A (false urgency) ...... VIOLATION  (#fake-timer never moves)
+                                           and #real-timer must NOT be charged
+          Exhibit C (basket sneaking) .... VIOLATION  (insurance box pre-ticked, has a price)
+                                           and the terms box must NOT be charged
+          Exhibit B (subscription trap) .. VIOLATION  (cancel is 4 links deep)
+      -->
+
+      <p class="urgent">
+        Offer ends in <span id="fake-timer">02:59</span> — hurry, only 3 left in stock!
+      </p>
+
+      <p class="honest">
+        Your seats are held for <span id="real-timer">05:00</span> remaining.
+      </p>
+
+      <h2>Your basket</h2>
+
+      <div class="row">
+        <input type="checkbox" id="item" checked disabled />
+        <label for="item">Cotton kurta, size M <span class="price">₹1,299</span></label>
+      </div>
+
+      <div class="row">
+        <input type="checkbox" id="insurance" checked />
+        <label for="insurance">
+          Purchase Protection Plan — covers accidental damage for 12 months
+          <span class="price">₹149</span>
+        </label>
+      </div>
+
+      <div class="row">
+        <input type="checkbox" id="donation" />
+        <label for="donation">Donate to the Bargain Bazaar Foundation <span class="price">₹10</span></label>
+      </div>
+
+      <div class="row">
+        <input type="checkbox" id="terms" checked />
+        <label for="terms">I accept the terms and conditions and the privacy policy</label>
+      </div>
+
+      <p><a href="/account.html">Your account</a></p>
+
+      <script>
+        // The fake one: resets to its starting value on every tick, so it is
+        // always "about to expire" and never expires.
+        const fake = document.getElementById('fake-timer');
+        setInterval(() => { fake.textContent = '02:59'; }, 1000);
+
+        // The honest one: actually counts down. A detector that charges this
+        // is producing a false positive.
+        let left = 300;
+        const real = document.getElementById('real-timer');
+        setInterval(() => {
+          left = Math.max(0, left - 1);
+          const m = String(Math.floor(left / 60)).padStart(2, '0');
+          const s = String(left % 60).padStart(2, '0');
+          real.textContent = `${m}:${s}`;
+        }, 1000);
+      </script>
+    </main>
+  </body>
+</html>
