@@ -125,57 +125,83 @@ export function LoadingSequence({
 }
 
 /**
- * The gavel itself. The head swings on the handle's pivot rather than sliding
- * down, which is what makes it read as a gavel and not a falling rectangle, and
- * the block takes the hit: it compresses a little and the ring leaves it.
+ * The gavel itself.
+ *
+ * The head swings on the far end of the handle rather than sliding straight
+ * down, which is what makes it read as a gavel being brought down and not a
+ * rectangle falling. The geometry is set so that the head's underside meets the
+ * block exactly at the resting angle: the pivot sits at (176, 112), the head's
+ * centre 106px to its left, so every degree of rotation moves the head about
+ * 1.8px vertically. Raised at -30 degrees it clears the block by some 50px;
+ * settled at 4 degrees it is resting on it.
+ *
+ * The block takes the hit. It compresses once, and the ring leaves from the
+ * point of contact rather than from the middle of the picture.
  */
 function GavelSlam() {
+  const impact = IMPACT_MS / 1000;
+
   return (
     <div className="relative grid place-items-center">
-      <motion.div
-        className="absolute h-24 w-24 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(176,55,36,0.5), transparent 70%)' }}
-        initial={{ scale: 0.2, opacity: 0 }}
-        animate={{ scale: [0.2, 1.5, 2.2], opacity: [0, 0.75, 0] }}
-        transition={{ delay: IMPACT_MS / 1000, duration: 0.7, ease: 'easeOut' }}
+      <svg
+        className="h-[clamp(140px,26vw,198px)] w-[clamp(146px,28vw,240px)]"
+        viewBox="0 0 208 172"
+        fill="none"
         aria-hidden="true"
-      />
+      >
+        {/* The strike ring, leaving the block where the head lands. */}
+        <motion.circle
+          cx="74"
+          cy="128"
+          r="26"
+          fill="none"
+          stroke="var(--color-stamp)"
+          strokeWidth="2"
+          initial={{ scale: 0.25, opacity: 0 }}
+          animate={{ scale: [0.25, 1.6, 2.4], opacity: [0, 0.7, 0] }}
+          transition={{ delay: impact, duration: 0.72, ease: 'easeOut' }}
+          style={{ transformOrigin: '74px 128px' }}
+        />
 
-      <svg width="124" height="110" viewBox="0 0 124 110" fill="none" aria-hidden="true">
-        {/* The sound block, struck. */}
+        {/* The sound block. */}
         <motion.g
           initial={{ scaleY: 1 }}
-          animate={{ scaleY: [1, 0.82, 1] }}
-          transition={{ delay: IMPACT_MS / 1000, duration: 0.34, ease: IMPACT }}
-          style={{ transformOrigin: '62px 92px' }}
+          animate={{ scaleY: [1, 0.78, 1] }}
+          transition={{ delay: impact, duration: 0.36, ease: IMPACT }}
+          style={{ transformOrigin: '74px 146px' }}
         >
-          <rect x="30" y="84" width="64" height="10" rx="2.5" fill="var(--color-panel-edge)" />
-          <rect x="38" y="94" width="48" height="5" rx="2" fill="var(--color-desk)" />
+          <rect x="30" y="130" width="88" height="14" rx="3.5" fill="var(--color-panel-edge)" />
+          <rect x="42" y="144" width="64" height="7" rx="3" fill="var(--color-desk)" />
         </motion.g>
 
         {/* The gavel, raised and brought down on the handle's pivot. */}
         <motion.g
-          initial={{ rotate: -46, y: -10, opacity: 0 }}
-          animate={{ rotate: [-46, -52, 8, 2], y: [-10, -10, 0, 0], opacity: 1 }}
+          initial={{ rotate: -30, opacity: 0 }}
+          animate={{ rotate: [-30, -38, 7, 4], opacity: 1 }}
           transition={{
-            duration: (IMPACT_MS + 220) / 1000,
-            times: [0, RISE_MS / (IMPACT_MS + 220), IMPACT_MS / (IMPACT_MS + 220), 1],
+            duration: (IMPACT_MS + 240) / 1000,
+            times: [0, RISE_MS / (IMPACT_MS + 240), IMPACT_MS / (IMPACT_MS + 240), 1],
             ease: IMPACT,
           }}
-          style={{ transformOrigin: '96px 62px' }}
+          style={{ transformOrigin: '176px 112px' }}
         >
+          {/* The head: a barrel, with its two bands. */}
           <rect
-            x="56"
-            y="52"
-            width="46"
-            height="16"
-            rx="4"
+            x="44"
+            y="98"
+            width="60"
+            height="28"
+            rx="7"
             fill="var(--color-stamp)"
             stroke="var(--color-stamp-hover)"
             strokeWidth="1.5"
           />
-          <rect x="66" y="46" width="8" height="28" rx="2.5" fill="var(--color-stamp-hover)" opacity="0.55" />
-          <rect x="96" y="57" width="24" height="6" rx="3" fill="#7a6a52" />
+          <rect x="52" y="98" width="5" height="28" fill="var(--color-stamp-hover)" opacity="0.5" />
+          <rect x="91" y="98" width="5" height="28" fill="var(--color-stamp-hover)" opacity="0.5" />
+
+          {/* The handle, running from the head to the hand. */}
+          <rect x="104" y="108" width="74" height="9" rx="4.5" fill="#8a7558" />
+          <rect x="160" y="105" width="18" height="15" rx="5" fill="#7a6647" />
         </motion.g>
       </svg>
     </div>

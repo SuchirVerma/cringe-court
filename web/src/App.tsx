@@ -6,6 +6,7 @@ import { EvidenceCard } from './components/EvidenceCard';
 import { VerdictCard } from './components/VerdictCard';
 import { ChargeDocket } from './components/ChargeDocket';
 import { LoadingSequence } from './components/LoadingSequence';
+import { CourtroomBoundary } from './components/CourtroomBoundary';
 import { useHealth } from './lib/useHealth';
 import { PREVIEW_FINDINGS, PREVIEW_LOG, PREVIEW_VERDICT } from './lib/preview';
 import { docketStack } from './animations/framerVariants';
@@ -291,7 +292,9 @@ export default function App() {
                 animate="shown"
               >
                 {findings.map((finding, i) => (
-                  <EvidenceCard key={finding.chargeId} finding={finding} index={i} />
+                  <CourtroomBoundary key={finding.chargeId} section="an exhibit">
+                    <EvidenceCard finding={finding} index={i} />
+                  </CourtroomBoundary>
                 ))}
               </motion.div>
             </section>
@@ -299,7 +302,9 @@ export default function App() {
 
           {verdict && (
             <div className="mt-7">
-              <VerdictCard verdict={verdict} />
+              <CourtroomBoundary section="the order">
+                <VerdictCard verdict={verdict} />
+              </CourtroomBoundary>
             </div>
           )}
         </main>

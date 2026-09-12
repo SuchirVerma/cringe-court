@@ -26,7 +26,24 @@ export function VerdictCard({ verdict }: { verdict: Verdict }) {
   const { ruleScale, sealDrift } = useOrderScroll(ref);
 
   const tone = verdict.guilty ? 'var(--color-stamp)' : 'var(--color-cleared)';
-  const { order } = verdict;
+
+  /*
+    The order block is filled in by the server, and the rest of this card does
+    not depend on it. So it is read defensively rather than destructured: a
+    payload from an older server, or one truncated in transit, must degrade to a
+    heading without a case number, never to a blank page.
+
+    This is the same promise the detectors make. A charge that cannot be
+    examined resolves to "inconclusive" instead of throwing, and a verdict that
+    arrives short of a field renders what it does have. The rule holds on both
+    sides of the wire.
+  */
+  const order = {
+    caseNumber: verdict.order?.caseNumber ?? null,
+    defendant: verdict.order?.defendant ?? verdict.host ?? verdict.url,
+    bench: verdict.order?.bench ?? null,
+    sitting: verdict.order?.sitting ?? null,
+  };
 
   return (
     <motion.section
@@ -58,12 +75,14 @@ export function VerdictCard({ verdict }: { verdict: Verdict }) {
           >
             In the matter of {order.defendant}
           </p>
-          <p
-            className="font-mono text-[0.64rem] uppercase tracking-[0.18em]"
-            style={{ color: 'var(--color-paper-meta)' }}
-          >
-            Case {order.caseNumber}
-          </p>
+          {order.caseNumber && (
+            <p
+              className="font-mono text-[0.64rem] uppercase tracking-[0.18em]"
+              style={{ color: 'var(--color-paper-meta)' }}
+            >
+              Case {order.caseNumber}
+            </p>
+          )}
         </div>
       </motion.header>
 
@@ -159,19 +178,25 @@ export function VerdictCard({ verdict }: { verdict: Verdict }) {
       )}
 
       <motion.footer variants={clause(reduced)} className="mt-6 border-t border-[rgba(42,35,32,0.14)] pt-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1">
-          <p className="text-[0.76rem]" style={{ color: '#5d524d' }}>
-            {order.bench}
-          </p>
-          <p
-            className="font-mono text-[0.62rem] uppercase tracking-[0.16em]"
-            style={{ color: 'var(--color-paper-meta)' }}
-          >
-            {order.sitting}
-          </p>
-        </div>
+        {(order.bench || order.sitting) && (
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1">
+            {order.bench && (
+              <p className="text-[0.76rem]" style={{ color: '#5d524d' }}>
+                {order.bench}
+              </p>
+            )}
+            {order.sitting && (
+              <p
+                className="font-mono text-[0.62rem] uppercase tracking-[0.16em]"
+                style={{ color: 'var(--color-paper-meta)' }}
+              >
+                {order.sitting}
+              </p>
+            )}
+          </div>
+        )}
 
-        <p className="mt-3 text-[0.74rem] leading-relaxed" style={{ color: '#6b5f59' }}>
+        <p className="text-[0.74rem] leading-relaxed" style={{ color: '#6b5f59' }}>
           {verdict.disclosure.note} Charges heard: {verdict.disclosure.examined.join(', ')}. Not examined
           in this build: {verdict.disclosure.notExamined.join(', ')}.
         </p>

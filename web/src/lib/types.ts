@@ -27,8 +27,12 @@ export interface Verdict {
   guilty: boolean;
   ruled: boolean;
   determined: number;
-  /** The order's own identity, issued with the ruling. */
-  order: { caseNumber: string; defendant: string; bench: string; sitting: string };
+  /**
+   * The order's own identity, issued with the ruling. Optional on purpose: the
+   * wire is not trusted, so the interface has to render a verdict that arrives
+   * without it rather than assume the server is the one it was built against.
+   */
+  order?: { caseNumber: string; defendant: string; bench: string; sitting: string };
   headline: string;
   score: number | null;
   outOf: number;

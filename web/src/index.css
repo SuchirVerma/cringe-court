@@ -57,6 +57,16 @@ body {
   overflow-x: clip;
 }
 
+/*
+  The scroll container has to be positioned for scroll offsets to be measured
+  relative to it, which is what the order's margin rule is driven from. A static
+  root measures against the viewport instead and the rule fills at the wrong
+  moment.
+*/
+html {
+  position: relative;
+}
+
 body {
   margin: 0;
   background-color: var(--color-canvas);
