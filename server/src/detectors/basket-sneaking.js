@@ -99,22 +99,37 @@ export async function detect({ sessionId, url, tier, site, profile, log }) {
       });
     }
 
-    if (result.looksEmpty) {
-      log('Exhibit C. The cart is empty, so there are no add-ons to inspect.', 'warn');
+    /*
+      An empty basket cannot clear anyone.
+
+      Matching empty-state copy is a losing game: every site words it
+      differently ("your bag is empty", "it feels so light in here", a picture
+      of a box). So the test is positive evidence instead of absence — at least
+      one line item with a price. Add-ons are offered alongside items, so a
+      basket with nothing in it has nothing to sneak into, and reporting that as
+      clean clears a company on a page where the pattern could not appear.
+
+      This errs toward refusing to clear, which is the right direction: a missed
+      clearance costs a "come back with something in your cart", while a wrong
+      one tells a user a checkout is honest when nobody checked.
+    */
+    if (result.cartLines.length === 0) {
+      log('Exhibit C. The basket has no items, so there is nothing to clear or charge.', 'warn');
       return inconclusive(CHARGE, {
         tier,
         reason:
-          'The cart was empty, and add-ons are offered alongside items. Add a product and run this again to ' +
-          'examine the checkout properly.',
-        proof: `Reached ${reached} and found an empty basket.`,
+          'The basket had no items in it, and paid add-ons are offered alongside items. Add a product to the ' +
+          'cart and run this again to examine the checkout properly.',
+        proof: `Reached ${reached}${result.looksEmpty ? ', which reported itself empty' : ' but found no line items'}.`,
       });
     }
 
-    log('Exhibit C. Nothing pre-ticked that costs money.');
+    log(`Exhibit C. ${result.cartLines.length} item${result.cartLines.length === 1 ? '' : 's'} in the basket, nothing pre-ticked that costs money.`);
     return clear(CHARGE, {
       tier,
       proof:
-        `Examined ${reached}, which presented as a basket. Found ${result.checkboxesFound} checkbox${result.checkboxesFound === 1 ? '' : 'es'}` +
+        `Examined ${reached}, a basket holding ${result.cartLines.length} item${result.cartLines.length === 1 ? '' : 's'}. ` +
+        `Found ${result.checkboxesFound} checkbox${result.checkboxesFound === 1 ? '' : 'es'}` +
         (preTicked.length
           ? `, ${preTicked.length} of them pre-ticked, none attached to a charge.`
           : ', none of them pre-ticked with a charge attached.'),

@@ -121,24 +121,64 @@ return await page.evaluate(() => {
     });
   }
 
-  // Cart line items, for the "appeared without being added" half of the charge.
+  /*
+    Cart line items.
+
+    Named selectors first, because when a site uses them they are exact. But
+    class names are a guess that fails on any site that did not pick our
+    vocabulary, and the count matters: a basket with no items cannot clear
+    anyone, so under-counting silently turns into a wrong clearance.
+
+    The fallback is structural instead of nominal: find the smallest elements
+    that carry a price, then take the parent that holds the most of them as
+    siblings. A list of priced rows is what a basket is, whatever it calls its
+    classes.
+  */
   const lineSelectors = [
     '[data-testid*="cart-item"]',
     '[class*="cart-item"]',
     '[class*="CartItem"]',
     '[class*="basket-item"]',
+    '[class*="line-item"]',
     'li[class*="item"]',
   ];
+
   const lines = [];
+  const pushLine = (el) => {
+    const text = (el.innerText || '').replace(/\s+/g, ' ').trim();
+    if (!text || text.length > 300) return;
+    if (!PRICE_PATTERN.test(text)) return;
+    if (lines.some((l) => l.text === text.slice(0, 200))) return;
+    lines.push({ text: text.slice(0, 200), path: pathOf(el) });
+  };
+
   for (const selector of lineSelectors) {
-    for (const el of Array.from(document.querySelectorAll(selector)).slice(0, 40)) {
-      const text = (el.innerText || '').replace(/\s+/g, ' ').trim();
-      if (!text || text.length > 300) continue;
-      if (!PRICE_PATTERN.test(text)) continue;
-      if (lines.some((l) => l.text === text)) continue;
-      lines.push({ text: text.slice(0, 200), path: pathOf(el) });
-    }
+    for (const el of Array.from(document.querySelectorAll(selector)).slice(0, 40)) pushLine(el);
     if (lines.length) break;
+  }
+
+  if (lines.length === 0) {
+    // Structural fallback: group price-bearing leaves by their parent.
+    const byParent = new Map();
+    for (const el of Array.from(document.querySelectorAll('body *')).slice(0, 4000)) {
+      if (el.children.length > 6) continue;
+      const text = (el.innerText || '').replace(/\s+/g, ' ').trim();
+      if (!text || text.length > 200) continue;
+      if (!PRICE_PATTERN.test(text)) continue;
+      // Skip totals and summaries: they carry prices but are not line items.
+      if (/\b(total|subtotal|grand\s+total|amount\s+payable|you\s+pay|savings?)\b/i.test(text)) continue;
+      const parent = el.parentElement;
+      if (!parent) continue;
+      if (!byParent.has(parent)) byParent.set(parent, []);
+      byParent.get(parent).push(el);
+    }
+
+    let best = [];
+    for (const group of byParent.values()) {
+      if (group.length > best.length) best = group;
+    }
+    // Two or more priced siblings reads as a list of items; one does not.
+    if (best.length >= 2) for (const el of best.slice(0, 20)) pushLine(el);
   }
 
   /*
