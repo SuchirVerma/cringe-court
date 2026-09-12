@@ -68,10 +68,10 @@ the exhibits to flip before you speak over them.
 
 *(Wait for results — ~25s. Fill with:)*
 
-> Signed out, the cart's empty and the account's behind a login wall. So it
-> says exactly that: **unproven** — and it refuses to score the site. It will
-> not hand out a 10/10 for a checkout nobody actually examined. Every
-> verdict is only what the browser actually saw.
+> It opened the real basket — one item in it — and found nothing pre-ticked:
+> **cleared**, honestly. The account's behind a login wall, so the cancel flow
+> is **unproven**, and the order says so in plain words rather than guessing.
+> Every verdict is only what the browser actually saw.
 >
 > That's the part we're proudest of. It never crashes, never guesses, and it
 > tells you *where it looked* and *why it stopped*.
@@ -106,7 +106,7 @@ the exhibits to flip before you speak over them.
 |---|---|---|
 | 0:00–0:30 | Problem | Home phase, still |
 | 0:30–1:40 | Demo Mode trial | Gavel → feed → 3 exhibits → GUILTY order |
-| 1:40–2:30 | Flipkart live | Recognised → unproven → "not scored" |
+| 1:40–2:30 | Flipkart live | Recognised → cleared, cleared, unproven → NOT GUILTY |
 | 2:30–3:10 | Tech stack | Verdict still on screen |
 | 3:10–3:30 | Impact, close | — |
 
